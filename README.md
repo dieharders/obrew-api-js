@@ -3,7 +3,8 @@
 A TypeScript/JavaScript API library providing React hooks for interacting with the Obrew AI backend services.
 
 Used to interact with Obrew Studio: Server https://github.com/dieharders/obrew-studio-server
-And used by the Obrew Studio WebUI https://github.com/dieharders/brain-dump
+
+Used by the Obrew Studio: WebUI https://github.com/dieharders/brain-dump
 
 ## Features
 
@@ -21,12 +22,32 @@ And used by the Obrew Studio WebUI https://github.com/dieharders/brain-dump
 
 ### As a Git Submodule
 
-Use Git Submodules for pulling client API code into other projects:
+Use Git Submodules for pulling code into other projects.
+Assuming `path/to/submodule` == `lib/obrew-api-js`.
+
+#### Install Git Submodule
 
 ```bash
 # In your consuming project
-git submodule add https://github.com/yourusername/obrew-api-js.git lib/obrew-api-js
+git submodule add https://github.com/dieharders/obrew-api-js.git path/to/submodule
 git submodule update --init --recursive
+```
+
+#### Update Git Submodule
+
+```bash
+git submodule update --remote path/to/submodule
+```
+
+#### Remove Git Submodule
+
+```bash
+# Remove the submodule entry from .git/config
+git submodule deinit -f path/to/submodule
+# Remove the submodule directory from .git/modules/
+rm -rf .git/modules/path/to/submodule
+# Remove the submodule from the working tree and index
+git rm -f path/to/submodule
 ```
 
 ### Development Setup
@@ -36,10 +57,39 @@ For development or when modifying source code:
 ```bash
 cd obrew-api-js
 npm install
+# Build source and commit to version control.
+# Code in `/dist` will be used by consuming apps.
 npm run build
 ```
 
 **Note:** When using this as a git submodule in your consuming project, the files in `/dist` are already built. You can use them directly without installing dependencies or building.
+
+### Scripts
+
+- `pnpm build` - Build the library for production
+- `pnpm dev` - Build in watch mode for development
+- `pnpm lint` - Lint the source code
+- `pnpm lint:fix` - Lint and fix issues automatically
+- `pnpm format` - Format code with Prettier
+- `pnpm format:check` - Check code formatting
+- `pnpm type-check` - Run TypeScript type checking
+
+### Project Structure
+
+```
+obrew-api-js/
+├── src/
+│   ├── index.ts      # Barrel exports (main entry point)
+│   ├── api.ts        # Core API client functions
+│   ├── hooks.ts      # React hooks
+│   ├── types.ts      # TypeScript type definitions
+│   └── utils.ts      # Utility functions
+├── dist/             # Build output (generated)
+├── package.json
+├── tsconfig.json
+├── tsup.config.ts
+└── README.md
+```
 
 ## Quick Start
 
@@ -103,6 +153,29 @@ if (services) {
 }
 ```
 
+## Configuration
+
+Configure the backend connection using the `setHostConnection` utility:
+
+```typescript
+import { setHostConnection, getHostConnection } from "obrew-api-js";
+
+// Set host connection
+setHostConnection({
+  domain: "http://localhost",
+  port: "8008",
+});
+
+// Get current connection settings
+const currentConnection = getHostConnection();
+console.log(currentConnection); // { domain: 'http://localhost', port: '8008' }
+```
+
+Default configuration:
+
+- **Domain**: `http://localhost`
+- **Port**: `8008`
+
 ## API Services
 
 The library dynamically creates service API clients based on the backend configuration. Common services include:
@@ -139,8 +212,18 @@ const response = await serviceApis.textInference.generate({
   signal: new AbortController().signal,
 });
 
-// For streaming responses, the Response object is returned
-// Check the content-type header for 'event-stream'
+// For streaming responses, the raw `Response` object is returned. Check the content-type header to determine if the response is a stream:
+const response = await serviceApis.textInference.generate({ body: {...} })
+
+const contentType = response.headers.get('content-type')
+if (contentType?.includes('event-stream')) {
+  // Handle streaming response
+  const reader = response.body?.getReader()
+  // Process stream...
+} else {
+  // Handle JSON response
+  const data = await response.json()
+}
 ```
 
 ### Memory Management
@@ -225,58 +308,6 @@ await serviceApis.storage.deleteChatThread({
 });
 ```
 
-## Configuration
-
-Configure the backend connection using the `setHostConnection` utility:
-
-```typescript
-import { setHostConnection, getHostConnection } from "obrew-api-js";
-
-// Set host connection
-setHostConnection({
-  domain: "http://localhost",
-  port: "8008",
-});
-
-// Get current connection settings
-const currentConnection = getHostConnection();
-console.log(currentConnection); // { domain: 'http://localhost', port: '8008' }
-```
-
-Default configuration:
-
-- **Domain**: `http://localhost`
-- **Port**: `8008`
-
-## Development
-
-### Scripts
-
-- `npm run build` - Build the library for production
-- `npm run dev` - Build in watch mode for development
-- `npm run lint` - Lint the source code
-- `npm run lint:fix` - Lint and fix issues automatically
-- `npm run format` - Format code with Prettier
-- `npm run format:check` - Check code formatting
-- `npm run type-check` - Run TypeScript type checking
-
-### Project Structure
-
-```
-obrew-api-js/
-├── src/
-│   ├── index.ts      # Barrel exports (main entry point)
-│   ├── api.ts        # Core API client functions
-│   ├── hooks.ts      # React hooks
-│   ├── types.ts      # TypeScript type definitions
-│   └── utils.ts      # Utility functions
-├── dist/             # Build output (generated)
-├── package.json
-├── tsconfig.json
-├── tsup.config.ts
-└── README.md
-```
-
 ## Type Definitions
 
 The library exports comprehensive TypeScript types for all API interactions:
@@ -323,21 +354,5 @@ try {
 } catch (error) {
   // Network or unexpected errors
   console.error("Request failed:", error);
-}
-```
-
-For streaming responses, the raw `Response` object is returned. Check the content-type header to determine if the response is a stream:
-
-```typescript
-const response = await serviceApis.textInference.generate({ body: {...} })
-
-const contentType = response.headers.get('content-type')
-if (contentType?.includes('event-stream')) {
-  // Handle streaming response
-  const reader = response.body?.getReader()
-  // Process stream...
-} else {
-  // Handle JSON response
-  const data = await response.json()
 }
 ```
