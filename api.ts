@@ -1,3 +1,4 @@
+// @TODO Remove
 import { useCallback } from "react";
 
 export type Message = {
@@ -532,7 +533,7 @@ export interface I_ServiceApis extends I_BaseServiceApis {
 }
 
 ////
-// @TODO Put these in our localStorage helper lib
+// @TODO Put these in the consuming app's localStorage helper lib
 const CONNECTION_KEY = "remote_host";
 
 const getHostConnection = () => {
