@@ -1,0 +1,26 @@
+# Source files (only ship built files if publishing)
+src/
+*.ts
+!*.d.ts
+
+# Config files
+tsconfig.json
+tsup.config.ts
+.eslintrc.json
+.prettierrc
+.prettierignore
+
+# Development
+.git/
+.github/
+.vscode/
+.idea/
+*.log
+coverage/
+node_modules/
+
+# Misc
+.DS_Store
+*.swp
+*.swo
+.env*
