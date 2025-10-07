@@ -1,6 +1,6 @@
-# Obrew API JS
+# Obrew JS API
 
-A TypeScript/JavaScript library providing React hooks and API clients for interacting with the Obrew AI backend services.
+A TypeScript/JavaScript API library providing React hooks for interacting with the Obrew AI backend services.
 
 Used to interact with Obrew Studio: Server https://github.com/dieharders/obrew-studio-server
 And used by the Obrew Studio WebUI https://github.com/dieharders/brain-dump
