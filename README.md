@@ -45,6 +45,7 @@ npm run build
 
 ```typescript
 import { useObrew } from 'obrew-api-js'
+import { useEffect } from 'react'
 
 function App() {
   const { connect, getServices } = useObrew()
@@ -55,9 +56,10 @@ function App() {
       const connection = await connect()
 
       if (connection?.success) {
-        // Get API services
-        const { serviceApis } = await getServices()
+        // Get API services with configuration options
+        const { serviceApis, configOptions } = await getServices()
         console.log('Connected to Obrew API', serviceApis)
+        console.log('API Config:', configOptions)
       }
     }
 
@@ -73,39 +75,45 @@ function App() {
 ```typescript
 import { getAPIConfig, createServices, setHostConnection } from "obrew-api-js";
 
-// Configure connection
+// Configure connection (optional - defaults to http://localhost:8008)
 setHostConnection({
   domain: "http://localhost",
   port: "8008",
 });
 
-// Get services
-const config = await getAPIConfig();
-const services = createServices(config);
+// Get API configuration from backend
+const apiConfig = await getAPIConfig();
 
-// Use the API
+// Create service API clients
+const services = createServices(apiConfig);
+
+// Use the API services
 if (services) {
   const response = await services.textInference.generate({
     body: {
       messages: [{ role: "user", content: "Hello!" }],
       responseMode: "chat",
     },
-    signal: abortController.signal,
+    signal: new AbortController().signal,
   });
+
+  console.log(response);
 }
 ```
 
 ## API Services
+
+The library dynamically creates service API clients based on the backend configuration. Common services include:
 
 ### Text Inference
 
 Generate text using LLM models with streaming or non-streaming responses:
 
 ```typescript
-const services = await getServices();
+const { serviceApis } = await getServices();
 
 // Load a model
-await services.textInference.load({
+await serviceApis.textInference.load({
   body: {
     modelPath: "/path/to/model",
     modelId: "my-model",
@@ -120,55 +128,58 @@ await services.textInference.load({
   },
 });
 
-// Generate text
-const response = await services.textInference.generate({
+// Generate text (non-streaming)
+const response = await serviceApis.textInference.generate({
   body: {
     messages: [{ role: "user", content: "Hello!" }],
     responseMode: "chat",
   },
-  signal: abortController.signal,
+  signal: new AbortController().signal,
 });
+
+// For streaming responses, the Response object is returned
+// Check the content-type header for 'event-stream'
 ```
 
 ### Memory Management
 
-Add and manage document collections for RAG:
+Add and manage document collections for RAG (Retrieval-Augmented Generation):
 
 ```typescript
 // Add a document to a collection
-await services.memory.addDocument({
+await serviceApis.memory.addDocument({
   body: {
     collectionId: 'my-collection',
-    documents: [...]
+    documents: [/* document objects */]
   }
 })
 
 // Get all collections
-const collections = await services.memory.getAllCollections()
+const collections = await serviceApis.memory.getAllCollections()
 
 // Query chunks
-const chunks = await services.memory.getChunks({
+const chunks = await serviceApis.memory.getChunks({
   queryParams: { collectionId: 'my-collection' }
 })
 ```
 
 ### Tool Management
 
-Register and execute custom tool functions:
+Manage and execute custom tool functions for AI agent capabilities:
 
 ```typescript
 // Get available tool functions
-const tools = await services.storage.getToolFunctions()
+const tools = await serviceApis.storage.getToolFunctions()
 
-// Get tool schema
-const schema = await services.storage.getToolSchema({
+// Get tool schema for a specific tool file
+const schema = await serviceApis.storage.getToolSchema({
   queryParams: { filename: 'my_tool.py' }
 })
 
 // Save tool settings
-await services.storage.saveToolSettings({
+await serviceApis.storage.saveToolSettings({
   body: {
-    tools: [...]
+    tools: [/* tool configuration objects */]
   }
 })
 ```
@@ -179,22 +190,27 @@ Persist bot settings and chat threads:
 
 ```typescript
 // Save bot settings
-await services.storage.saveBotSettings({
+await serviceApis.storage.saveBotSettings({
   body: {
-    settings: {...}
+    settings: {/* bot configuration */}
   }
 })
 
 // Save chat thread
-await services.storage.saveChatThread({
+await serviceApis.storage.saveChatThread({
   body: {
     threadId: 'thread-123',
-    thread: {...}
+    thread: {/* thread data */}
   }
 })
 
 // Get chat threads
-const threads = await services.storage.getChatThread({
+const threads = await serviceApis.storage.getChatThread({
+  queryParams: { threadId: 'thread-123' }
+})
+
+// Delete a chat thread
+await serviceApis.storage.deleteChatThread({
   queryParams: { threadId: 'thread-123' }
 })
 ```
@@ -268,7 +284,7 @@ import type {
 
 ## Error Handling
 
-All API methods return responses with the following structure:
+All API methods return responses with a consistent structure:
 
 ```typescript
 interface I_GenericAPIResponse<DataResType> {
@@ -278,24 +294,40 @@ interface I_GenericAPIResponse<DataResType> {
 }
 ```
 
-Handle errors appropriately:
+The library handles errors internally and returns them in a standardized format:
 
 ```typescript
 try {
-  const result = await services.textInference.generate({ body: {...} })
+  const result = await serviceApis.textInference.generate({
+    body: {
+      messages: [{ role: "user", content: "Hello!" }],
+      responseMode: "chat",
+    }
+  })
 
-  if (!result.success) {
-    console.error('Error:', result.message)
+  if (result.success) {
+    console.log('Response:', result.data)
+  } else {
+    console.error('API Error:', result.message)
   }
 } catch (error) {
+  // Network or unexpected errors
   console.error('Request failed:', error)
 }
 ```
 
-## License
+For streaming responses, the raw `Response` object is returned. Check the content-type header to determine if the response is a stream:
 
-MIT
+```typescript
+const response = await serviceApis.textInference.generate({ body: {...} })
 
-## Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request.
+const contentType = response.headers.get('content-type')
+if (contentType?.includes('event-stream')) {
+  // Handle streaming response
+  const reader = response.body?.getReader()
+  // Process stream...
+} else {
+  // Handle JSON response
+  const data = await response.json()
+}
+```
