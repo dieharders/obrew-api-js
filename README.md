@@ -8,13 +8,13 @@ And used by the Obrew Studio WebUI https://github.com/dieharders/brain-dump
 ## Features
 
 - 🎣 React hooks for easy integration
-- 🤖 Text Inference/Memory/RAG API with streaming support
+- 🤖 Text Inference/RAG API with streaming support
 - 🛠️ Tool function management and execution
 - 💾 Storage and persistence layer
-- 📦 Full TypeScript support with comprehensive type definitions
+- 📦 Full TypeScript support
 - 🔄 Automatic connection management
-- 🌲 Tree-shakable exports for optimal bundle size
-- ⚡ Built with tsup for fast, modern builds
+- 🌲 Tree-shakable exports
+- ⚡ Built with tsup for fast builds
 - 🎯 ESM and CommonJS support
 
 ## Installation
@@ -31,13 +31,15 @@ git submodule update --init --recursive
 
 ### Development Setup
 
-After cloning or adding as a submodule:
+For development or when modifying source code:
 
 ```bash
 cd obrew-api-js
 npm install
 npm run build
 ```
+
+**Note:** When using this as a git submodule in your consuming project, the files in `/dist` are already built. You can use them directly without installing dependencies or building.
 
 ## Quick Start
 
@@ -149,18 +151,20 @@ Add and manage document collections for RAG (Retrieval-Augmented Generation):
 // Add a document to a collection
 await serviceApis.memory.addDocument({
   body: {
-    collectionId: 'my-collection',
-    documents: [/* document objects */]
-  }
-})
+    collectionId: "my-collection",
+    documents: [
+      /* document objects */
+    ],
+  },
+});
 
 // Get all collections
-const collections = await serviceApis.memory.getAllCollections()
+const collections = await serviceApis.memory.getAllCollections();
 
 // Query chunks
 const chunks = await serviceApis.memory.getChunks({
-  queryParams: { collectionId: 'my-collection' }
-})
+  queryParams: { collectionId: "my-collection" },
+});
 ```
 
 ### Tool Management
@@ -169,19 +173,21 @@ Manage and execute custom tool functions for AI agent capabilities:
 
 ```typescript
 // Get available tool functions
-const tools = await serviceApis.storage.getToolFunctions()
+const tools = await serviceApis.storage.getToolFunctions();
 
 // Get tool schema for a specific tool file
 const schema = await serviceApis.storage.getToolSchema({
-  queryParams: { filename: 'my_tool.py' }
-})
+  queryParams: { filename: "my_tool.py" },
+});
 
 // Save tool settings
 await serviceApis.storage.saveToolSettings({
   body: {
-    tools: [/* tool configuration objects */]
-  }
-})
+    tools: [
+      /* tool configuration objects */
+    ],
+  },
+});
 ```
 
 ### Storage
@@ -192,27 +198,31 @@ Persist bot settings and chat threads:
 // Save bot settings
 await serviceApis.storage.saveBotSettings({
   body: {
-    settings: {/* bot configuration */}
-  }
-})
+    settings: {
+      /* bot configuration */
+    },
+  },
+});
 
 // Save chat thread
 await serviceApis.storage.saveChatThread({
   body: {
-    threadId: 'thread-123',
-    thread: {/* thread data */}
-  }
-})
+    threadId: "thread-123",
+    thread: {
+      /* thread data */
+    },
+  },
+});
 
 // Get chat threads
 const threads = await serviceApis.storage.getChatThread({
-  queryParams: { threadId: 'thread-123' }
-})
+  queryParams: { threadId: "thread-123" },
+});
 
 // Delete a chat thread
 await serviceApis.storage.deleteChatThread({
-  queryParams: { threadId: 'thread-123' }
-})
+  queryParams: { threadId: "thread-123" },
+});
 ```
 
 ## Configuration
@@ -302,17 +312,17 @@ try {
     body: {
       messages: [{ role: "user", content: "Hello!" }],
       responseMode: "chat",
-    }
-  })
+    },
+  });
 
   if (result.success) {
-    console.log('Response:', result.data)
+    console.log("Response:", result.data);
   } else {
-    console.error('API Error:', result.message)
+    console.error("API Error:", result.message);
   }
 } catch (error) {
   // Network or unexpected errors
-  console.error('Request failed:', error)
+  console.error("Request failed:", error);
 }
 ```
 
