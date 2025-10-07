@@ -1,21 +1,27 @@
 # Obrew API JS
 
-A TypeScript/JavaScript library providing React hooks and API clients for interacting with the Homebrew AI backend services.
+A TypeScript/JavaScript library providing React hooks and API clients for interacting with the Obrew AI backend services.
+
+Used to interact with Obrew Studio: Server https://github.com/dieharders/obrew-studio-server
+And used by the Obrew Studio WebUI https://github.com/dieharders/brain-dump
 
 ## Features
 
 - 🎣 React hooks for easy integration
-- 🤖 Text inference API with streaming support
-- 🧠 Memory/RAG (Retrieval-Augmented Generation) management
+- 🤖 Text Inference/Memory/RAG API with streaming support
 - 🛠️ Tool function management and execution
 - 💾 Storage and persistence layer
-- 📦 Full TypeScript support with comprehensive type definitions
+- 📦 Full TypeScript support
 - 🔄 Automatic connection management
 
 ## Installation
 
+Use Git Submodules for pulling client api code into other projects:
+
 ```bash
-npm install obrew-api-js
+# In your consuming project
+git submodule add https://github.com/yourusername/shared-code.git shared-code
+git commit -m "Add shared code submodule"
 ```
 
 ## Quick Start
@@ -206,19 +212,6 @@ try {
 } catch (error) {
   console.error('Request failed:', error)
 }
-```
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Build the library
-npm run build
-
-# Run tests
-npm test
 ```
 
 ## License
