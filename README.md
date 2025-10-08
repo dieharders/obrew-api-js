@@ -23,7 +23,7 @@ Used by the Obrew Studio: WebUI https://github.com/dieharders/brain-dump
 ### As a Git Submodule
 
 Use Git Submodules for pulling code into other projects.
-Assuming `path/to/submodule` == `lib/obrew-api-js`.
+For example in root of your project, `path/to/submodule` == `src/lib/obrew-api-js`.
 
 #### Install Git Submodule
 
@@ -31,6 +31,7 @@ Assuming `path/to/submodule` == `lib/obrew-api-js`.
 # In your consuming project
 git submodule add https://github.com/dieharders/obrew-api-js.git path/to/submodule
 git submodule update --init --recursive
+# Commit the resulting .gitmodules file and "special" git folder that was created
 ```
 
 #### Update Git Submodule
