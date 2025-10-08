@@ -56,10 +56,10 @@ For development or when modifying source code:
 
 ```bash
 cd obrew-api-js
-npm install
+pnpm install
 # Build source and commit to version control.
 # Code in `/dist` will be used by consuming apps.
-npm run build
+pnpm build
 ```
 
 **Note:** When using this as a git submodule in your consuming project, the files in `/dist` are already built. You can use them directly without installing dependencies or building.
