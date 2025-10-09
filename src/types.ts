@@ -471,13 +471,14 @@ export interface I_BaseServiceApis {
 export type T_TextInferenceAPIRequest = (props: {
   body: I_InferenceGenerateOptions;
   signal: AbortSignal;
-}) =>
-  | (Response &
-      I_NonStreamPlayground &
-      I_NonStreamChatbotResponse &
-      string & // a JSON string
-      I_GenericAPIResponse<any>)
-  | null;
+}) => Promise<
+  | Response
+  | I_NonStreamPlayground
+  | I_NonStreamChatbotResponse
+  | string // a JSON string
+  | I_GenericAPIResponse<any>
+  | null
+>
 
 export interface I_DeleteTextModelReqPayload {
   repoId: string;

@@ -19,8 +19,9 @@ import type {
  * Connect to the Obrew backend server
  * @returns A promise that resolves with connection info or null on failure
  */
-export const connect = async (config: I_ObrewConfig): Promise<I_ConnectResponse | null> => {
+export const connect = async ({config, signal}:{config: I_ObrewConfig, signal?: AbortSignal}): Promise<I_ConnectResponse | null> => {
   const options = {
+    ...(signal && {signal}),
     method: "GET",
     headers: {
       "Content-Type": "application/json",
