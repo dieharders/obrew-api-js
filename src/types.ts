@@ -416,6 +416,17 @@ export interface I_Text_Settings {
 // API Configuration Types
 // ============================================================================
 
+export interface I_ObrewConfig {
+  domain: string
+  port: string
+  enabled: boolean
+}
+
+export interface I_ObrewConnection {
+    config: I_ObrewConfig,
+    api: I_ServiceApis | null
+}
+
 export type T_APIConfigOptions = {
   chunkingStrategies?: Array<string>;
   domain?: string;

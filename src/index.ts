@@ -58,32 +58,22 @@
 // ============================================================================
 
 export {
-  fetchConnect,
-  fetchAPIConfig,
+  connect,
   createServices,
-  connectToLocalProvider,
-  getAPIConfig,
+  fetchAPIConfig,
 } from "./api";
-
-// ============================================================================
-// React Hooks
-// ============================================================================
-
-export { useObrew, useHomebrew } from "./hooks";
-export type { ServicesWithConfig } from "./hooks";
 
 // ============================================================================
 // Utility Functions
 // ============================================================================
 
 export {
-  getHostConnection, // May embed this in consuming app
-  setHostConnection, // May embed this in consuming app
   createDomainName,
   defaultPort,
   defaultDomain,
+  DEFAULT_OBREW_CONFIG,
+  DEFAULT_OBREW_CONNECTION,
 } from "./utils";
-export type { HostConnection } from "./utils";
 
 // ============================================================================
 // Type Exports - Message & Thread Types

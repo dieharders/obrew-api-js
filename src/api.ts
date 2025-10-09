@@ -12,14 +12,14 @@ import type {
   I_GenericAPIRequestParams,
   T_GenericReqPayload,
   T_APIConfigOptions,
+  I_ObrewConfig,
 } from "./types";
 
 /**
  * Connect to the Obrew backend server
- * Why named fetchConnect? just `connect`
  * @returns A promise that resolves with connection info or null on failure
  */
-export const fetchConnect = async (): Promise<I_ConnectResponse | null> => {
+export const connect = async (config: I_ObrewConfig): Promise<I_ConnectResponse | null> => {
   const options = {
     method: "GET",
     headers: {
@@ -28,38 +28,13 @@ export const fetchConnect = async (): Promise<I_ConnectResponse | null> => {
   };
 
   try {
-    const domain = createDomainName();
-    const res = await fetch(`${domain}/v1/connect`, options);
-    if (!res.ok) throw new Error(`[obrew] HTTP error! Status: ${res.status}`);
-    if (!res) throw new Error("[obrew] No response received.");
+    const origin = createDomainName(config);
+    const res = await fetch(`${origin}/v1/connect`, options);
+    if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+    if (!res) throw new Error("No response received.");
     return res.json();
   } catch (err) {
     console.error("[obrew] connectToServer error:", err);
-    return null;
-  }
-};
-
-/**
- * Fetch the API configuration from the backend
- * @returns A promise that resolves with the API configuration or null on failure
- */
-export const fetchAPIConfig = async (): Promise<I_ServicesResponse | null> => {
-  const options = {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  };
-
-  try {
-    const endpoint = "/v1/services/api";
-    const domain = createDomainName();
-    const res = await fetch(`${domain}${endpoint}`, options);
-    if (!res.ok) throw new Error(`[obrew] HTTP error! Status: ${res.status}`);
-    if (!res) throw new Error(`[obrew] No response from ${endpoint}`);
-    return res.json();
-  } catch (err) {
-    console.error("[obrew] fetchAPIConfig error:", err);
     return null;
   }
 };
@@ -70,6 +45,7 @@ export const fetchAPIConfig = async (): Promise<I_ServicesResponse | null> => {
  * @returns Service API clients or null if configuration is invalid
  */
 export const createServices = (
+  config: I_ObrewConfig,
   response: I_API[] | null
 ): I_ServiceApis | null => {
   if (!response || response.length === 0) return null;
@@ -78,7 +54,7 @@ export const createServices = (
 
   // Construct api funcs for each service
   response.forEach((api) => {
-    const origin = `${createDomainName()}`;
+    const origin = createDomainName(config);
     const apiName = api.name;
     const endpoints: {
       [key: string]: (args: any) => Promise<Response | null>;
@@ -166,32 +142,30 @@ export const createServices = (
 };
 
 /**
- * Connect to the local Obrew provider
- * @returns A promise that resolves with connection info or null on failure
- */
-export const connectToLocalProvider =
-  async (): Promise<I_ConnectResponse | null> => {
-    const conn = await fetchConnect();
-    console.log("[obrew] Connecting:", conn);
-
-    const connected = conn?.success;
-    if (!connected) return null;
-
-    console.log(`[obrew] Connected to local ai engine: ${conn.message}`);
-    return conn;
-  };
-
-/**
  * Get the API configuration from the backend
  * @returns A promise that resolves with the API array or null on failure
  */
-export const getAPIConfig = async () => {
-  const config = await fetchAPIConfig();
-  console.log("[obrew] getAPIConfig:", config);
+export const fetchAPIConfig = async (config:I_ObrewConfig): Promise<I_API[] | null> => {
+  const options = {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
 
-  const success = config?.success;
-  if (!success) return null;
-
-  const apis = config.data;
-  return apis;
+  try {
+    const endpoint = "/v1/services/api";
+    const url = createDomainName(config);
+    const res = await fetch(`${url}${endpoint}`, options);
+    if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+    if (!res) throw new Error(`No response from ${endpoint}`);
+    const result: I_ServicesResponse = await res.json();
+    const success = result?.success;
+    if (!success) return null;
+    const apis = result.data;
+    return apis;
+  } catch (err) {
+    console.error("[obrew] fetchAPIConfig error:", err);
+    return null;
+  }
 };
