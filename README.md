@@ -82,7 +82,7 @@ obrew-api-js/
 ├── src/
 │   ├── index.ts      # Barrel exports (main entry point)
 │   ├── api.ts        # Core API client functions
-│   ├── hooks.ts      # React hooks
+│   ├── client.ts     # Client helper functions
 │   ├── types.ts      # TypeScript type definitions
 │   └── utils.ts      # Utility functions
 ├── dist/             # Build output (generated)
