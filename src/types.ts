@@ -416,15 +416,15 @@ export interface I_Text_Settings {
 // API Configuration Types
 // ============================================================================
 
-export interface I_ObrewConfig {
+export interface I_ConnectionConfig {
   domain: string
   port: string
   version: string
   enabled: boolean
 }
 
-export interface I_ObrewConnection {
-    config: I_ObrewConfig,
+export interface I_Connection {
+    config: I_ConnectionConfig,
     api: I_ServiceApis | null
 }
 

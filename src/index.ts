@@ -178,6 +178,8 @@ export type {
   I_API,
   I_ServicesResponse,
   I_ConnectResponse,
+  I_ConnectionConfig,
+  I_Connection
 } from "./types";
 
 // ============================================================================

@@ -1,5 +1,5 @@
 import { createServices, fetchAPIConfig, connect } from "./api";
-import { I_ObrewConnection, I_ObrewConfig, Message, I_InferenceGenerateOptions } from "./types";
+import { I_Connection, I_ConnectionConfig, Message, I_InferenceGenerateOptions } from "./types";
 import { DEFAULT_OBREW_CONNECTION } from "./utils";
 
 /**
@@ -11,7 +11,7 @@ import { DEFAULT_OBREW_CONNECTION } from "./utils";
 class ObrewClient {
   private isConnected = false
   private abortController: AbortController | null = null
-  private connection: I_ObrewConnection = DEFAULT_OBREW_CONNECTION
+  private connection: I_Connection = DEFAULT_OBREW_CONNECTION
 
   // Data Methods //
   
@@ -25,7 +25,7 @@ class ObrewClient {
   /**
    * Return the current connection
    */
-  getConnection(): I_ObrewConnection {
+  getConnection(): I_Connection {
     return this.connection
   }
 
@@ -34,7 +34,7 @@ class ObrewClient {
   /**
   * Initialize connection to Obrew backend.
   */
-  async connect(config: I_ObrewConfig): Promise<boolean> {
+  async connect(config: I_ConnectionConfig): Promise<boolean> {
     if (this.isConnected) {
         console.log('[obrew] Connection is already active!')
         return false
