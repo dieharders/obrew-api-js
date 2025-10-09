@@ -1,24 +1,21 @@
 'use strict';
 
-var react = require('react');
-
 // src/utils.ts
-var CONNECTION_KEY = "remote_host";
-var getHostConnection = () => {
-  if (typeof localStorage === "undefined") return {};
-  const data = localStorage.getItem(CONNECTION_KEY);
-  const config = data ? JSON.parse(data) : {};
-  return config;
-};
-var setHostConnection = (newConnection) => {
-  if (typeof localStorage === "undefined") return;
-  const setting = JSON.stringify(newConnection);
-  localStorage.setItem(CONNECTION_KEY, setting);
-};
 var defaultPort = "8008";
 var defaultDomain = "http://localhost";
-var createDomainName = () => {
-  const { port, domain } = getHostConnection();
+var DEFAULT_OBREW_CONFIG = {
+  domain: defaultDomain,
+  port: defaultPort,
+  version: "v1",
+  enabled: false
+  // Disabled by default until connected
+};
+var DEFAULT_OBREW_CONNECTION = {
+  config: DEFAULT_OBREW_CONFIG,
+  api: null
+};
+var createDomainName = (config) => {
+  const { port, domain } = config;
   const PORT = port || defaultPort;
   const DOMAIN = domain === "0.0.0.0" ? defaultDomain : domain || defaultDomain;
   const origin = `${DOMAIN}:${PORT}`;
@@ -26,48 +23,30 @@ var createDomainName = () => {
 };
 
 // src/api.ts
-var fetchConnect = async () => {
+var connect = async ({ config, signal }) => {
   const options = {
+    ...signal && { signal },
     method: "GET",
     headers: {
       "Content-Type": "application/json"
     }
   };
   try {
-    const domain = createDomainName();
-    const res = await fetch(`${domain}/v1/connect`, options);
-    if (!res.ok) throw new Error(`[obrew] HTTP error! Status: ${res.status}`);
-    if (!res) throw new Error("[obrew] No response received.");
+    const origin = createDomainName(config);
+    const res = await fetch(`${origin}/${config.version}/connect`, options);
+    if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+    if (!res) throw new Error("No response received.");
     return res.json();
   } catch (err) {
     console.error("[obrew] connectToServer error:", err);
     return null;
   }
 };
-var fetchAPIConfig = async () => {
-  const options = {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json"
-    }
-  };
-  try {
-    const endpoint = "/v1/services/api";
-    const domain = createDomainName();
-    const res = await fetch(`${domain}${endpoint}`, options);
-    if (!res.ok) throw new Error(`[obrew] HTTP error! Status: ${res.status}`);
-    if (!res) throw new Error(`[obrew] No response from ${endpoint}`);
-    return res.json();
-  } catch (err) {
-    console.error("[obrew] fetchAPIConfig error:", err);
-    return null;
-  }
-};
-var createServices = (response) => {
+var createServices = (config, response) => {
   if (!response || response.length === 0) return null;
   const serviceApis = {};
   response.forEach((api) => {
-    const origin = `${createDomainName()}`;
+    const origin = createDomainName(config);
     const apiName = api.name;
     const endpoints = {};
     let res;
@@ -125,44 +104,275 @@ var createServices = (response) => {
   });
   return serviceApis;
 };
-var connectToLocalProvider = async () => {
-  const conn = await fetchConnect();
-  console.log("[obrew] Connecting:", conn);
-  const connected = conn?.success;
-  if (!connected) return null;
-  console.log(`[obrew] Connected to local ai engine: ${conn.message}`);
-  return conn;
-};
-var getAPIConfig = async () => {
-  const config = await fetchAPIConfig();
-  console.log("[obrew] getAPIConfig:", config);
-  const success = config?.success;
-  if (!success) return null;
-  const apis = config.data;
-  return apis;
-};
-var useObrew = () => {
-  const getServices = react.useCallback(async () => {
-    const res = await getAPIConfig();
-    let configOptions = {};
-    res?.forEach((i) => {
-      if (i.configs) configOptions = { ...configOptions, ...i.configs };
-    });
-    const serviceApis = createServices(res);
-    return { serviceApis, configOptions };
-  }, []);
-  const connect = react.useCallback(async () => {
-    const result = await connectToLocalProvider();
-    if (!result?.success) return null;
-    await getServices();
-    return result;
-  }, [getServices]);
-  return {
-    connect,
-    getServices
+var fetchAPIConfig = async (config) => {
+  const options = {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json"
+    }
   };
+  try {
+    const endpoint = "/${config.version}/services/api";
+    const url = createDomainName(config);
+    const res = await fetch(`${url}${endpoint}`, options);
+    if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+    if (!res) throw new Error(`No response from ${endpoint}`);
+    const result = await res.json();
+    const success = result?.success;
+    if (!success) return null;
+    const apis = result.data;
+    return apis;
+  } catch (err) {
+    console.error("[obrew] fetchAPIConfig error:", err);
+    return null;
+  }
 };
-var useHomebrew = useObrew;
+
+// src/client.ts
+var ObrewClient = class {
+  constructor() {
+    this.isConnected = false;
+    this.abortController = null;
+    this.connection = DEFAULT_OBREW_CONNECTION;
+  }
+  // Data Methods //
+  /**
+  * Check if service is connected
+  */
+  isServiceConnected() {
+    return this.isConnected && !!this.connection.api;
+  }
+  /**
+   * Return the current connection
+   */
+  getConnection() {
+    return this.connection;
+  }
+  // Connection Methods //
+  /**
+  * Initialize connection to Obrew backend.
+  */
+  async connect(config) {
+    if (this.isConnected) {
+      console.log("[obrew] Connection is already active!");
+      return false;
+    }
+    try {
+      const connSuccess = await connect({ config });
+      if (!connSuccess?.success) throw new Error(connSuccess?.message);
+      const apiConfig = await fetchAPIConfig(config);
+      if (!apiConfig) throw new Error("No api returned.");
+      const serviceApis = createServices(config, apiConfig);
+      if (serviceApis) {
+        this.isConnected = true;
+        console.log("[obrew] Successfully connected to Obrew API");
+        this.connection = { config, api: serviceApis };
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("[obrew] Failed to connect to Obrew:", error);
+      this.isConnected = false;
+      return false;
+    }
+  }
+  /**
+  * Ping server to check if it's responsive.
+  * Used for server discovery and health checks.
+  */
+  async ping(timeout = 5e3) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    const startTime = performance.now();
+    try {
+      const connSuccess = await connect({ config: this.connection.config, signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (!connSuccess?.success) throw new Error(connSuccess?.message);
+      return { success: true, responseTime: Math.round(performance.now() - startTime) };
+    } catch (error) {
+      clearTimeout(timeoutId);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Connection failed"
+      };
+    }
+  }
+  /**
+  * Cancel ongoing request
+  */
+  cancelRequest() {
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
+    }
+  }
+  /**
+  * Disconnect from service
+  */
+  disconnect() {
+    this.cancelRequest();
+    this.connection.api = null;
+    this.isConnected = false;
+  }
+  // Core API Helper Methods //
+  /**
+   * Handle streaming response from AI
+   */
+  async handleStreamingResponse(response) {
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error("No reader available for streaming response");
+    }
+    const decoder = new TextDecoder();
+    let fullText = "";
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6);
+            if (data === "[DONE]") break;
+            try {
+              const parsed = JSON.parse(data);
+              fullText += this.extractTextFromResponse(parsed);
+            } catch (e) {
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+    return fullText;
+  }
+  /**
+   * Extract text from various response formats
+   */
+  extractTextFromResponse(response) {
+    if (response.text) {
+      return response.text;
+    }
+    if (response.response) {
+      return response.response;
+    }
+    if (response.data && typeof response.data === "string") {
+      return response.data;
+    }
+    if (response.choices && Array.isArray(response.choices)) {
+      return response.choices[0]?.text || response.choices[0]?.message?.content || "";
+    }
+    return String(response);
+  }
+  /**
+   * Send a message and get AI response
+   * Handles both streaming and non-streaming responses
+   */
+  async sendMessage(messages, options) {
+    if (!this.isServiceConnected()) {
+      throw new Error("Not connected to Obrew service");
+    }
+    this.abortController = new AbortController();
+    try {
+      const response = await this.connection?.api?.textInference.generate({
+        body: {
+          messages,
+          responseMode: "chat",
+          temperature: 0.7,
+          max_tokens: 2048,
+          stream: false,
+          // @TODO Non-streaming for now
+          ...options
+        },
+        signal: this.abortController.signal
+      });
+      if (!response) {
+        throw new Error("No response from AI service");
+      }
+      if (typeof response === "string") {
+        return response;
+      }
+      if (typeof response === "object" && response !== null && "headers" in response && "body" in response) {
+        const httpResponse = response;
+        const contentType = httpResponse.headers.get("content-type");
+        if (contentType?.includes("event-stream")) {
+          return await this.handleStreamingResponse(httpResponse);
+        } else {
+          const data = await httpResponse.json();
+          return this.extractTextFromResponse(data);
+        }
+      }
+      return this.extractTextFromResponse(response);
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error("Request was cancelled");
+      }
+      throw error;
+    }
+  }
+  /**
+   * Load a text model
+   */
+  async loadModel(modelPath, modelId) {
+    if (!this.isServiceConnected()) {
+      throw new Error("Not connected to Obrew service");
+    }
+    try {
+      await this.connection?.api?.textInference.load({
+        body: {
+          modelPath,
+          modelId,
+          init: {
+            n_ctx: 4096,
+            n_threads: 4,
+            n_gpu_layers: -1
+          },
+          call: {
+            temperature: 0.7,
+            max_tokens: 2048
+          }
+        }
+      });
+      return true;
+    } catch (error) {
+      console.error("Failed to load model:", error);
+      return false;
+    }
+  }
+  /**
+   * Get currently loaded model info
+   */
+  async getLoadedModel() {
+    if (!this.isServiceConnected()) {
+      return null;
+    }
+    try {
+      const response = await this.connection?.api?.textInference.model();
+      return response?.data || null;
+    } catch (error) {
+      console.error("Failed to get loaded model:", error);
+      return null;
+    }
+  }
+  /**
+   * Get list of installed models
+   */
+  async getInstalledModels() {
+    if (!this.isServiceConnected()) {
+      return [];
+    }
+    try {
+      const response = await this.connection?.api?.textInference.installed();
+      return response?.data || [];
+    } catch (error) {
+      console.error("Failed to get installed models:", error);
+      return [];
+    }
+  }
+};
+var obrewClient = new ObrewClient();
 
 // src/types.ts
 var ModelID = /* @__PURE__ */ ((ModelID2) => {
@@ -187,23 +397,13 @@ exports.AGENT_RETRIEVAL_METHOD = AGENT_RETRIEVAL_METHOD;
 exports.AUGMENTED_RETRIEVAL_METHOD = AUGMENTED_RETRIEVAL_METHOD;
 exports.BASE_RETRIEVAL_METHOD = BASE_RETRIEVAL_METHOD;
 exports.DEFAULT_CONVERSATION_MODE = DEFAULT_CONVERSATION_MODE;
+exports.DEFAULT_OBREW_CONFIG = DEFAULT_OBREW_CONFIG;
 exports.DEFAULT_RETRIEVAL_METHOD = DEFAULT_RETRIEVAL_METHOD;
 exports.DEFAULT_TOOL_RESPONSE_MODE = DEFAULT_TOOL_RESPONSE_MODE;
 exports.DEFAULT_TOOL_USE_MODE = DEFAULT_TOOL_USE_MODE;
 exports.ModelID = ModelID;
 exports.NATIVE_TOOL_USE = NATIVE_TOOL_USE;
 exports.UNIVERSAL_TOOL_USE = UNIVERSAL_TOOL_USE;
-exports.connectToLocalProvider = connectToLocalProvider;
-exports.createDomainName = createDomainName;
-exports.createServices = createServices;
-exports.defaultDomain = defaultDomain;
-exports.defaultPort = defaultPort;
-exports.fetchAPIConfig = fetchAPIConfig;
-exports.fetchConnect = fetchConnect;
-exports.getAPIConfig = getAPIConfig;
-exports.getHostConnection = getHostConnection;
-exports.setHostConnection = setHostConnection;
-exports.useHomebrew = useHomebrew;
-exports.useObrew = useObrew;
+exports.client = obrewClient;
 //# sourceMappingURL=index.js.map
 //# sourceMappingURL=index.js.map

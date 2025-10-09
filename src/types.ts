@@ -416,6 +416,18 @@ export interface I_Text_Settings {
 // API Configuration Types
 // ============================================================================
 
+export interface I_ObrewConfig {
+  domain: string
+  port: string
+  version: string
+  enabled: boolean
+}
+
+export interface I_ObrewConnection {
+    config: I_ObrewConfig,
+    api: I_ServiceApis | null
+}
+
 export type T_APIConfigOptions = {
   chunkingStrategies?: Array<string>;
   domain?: string;
@@ -460,13 +472,14 @@ export interface I_BaseServiceApis {
 export type T_TextInferenceAPIRequest = (props: {
   body: I_InferenceGenerateOptions;
   signal: AbortSignal;
-}) =>
-  | (Response &
-      I_NonStreamPlayground &
-      I_NonStreamChatbotResponse &
-      string & // a JSON string
-      I_GenericAPIResponse<any>)
-  | null;
+}) => Promise<
+  | Response
+  | I_NonStreamPlayground
+  | I_NonStreamChatbotResponse
+  | string // a JSON string
+  | I_GenericAPIResponse<any>
+  | null
+>
 
 export interface I_DeleteTextModelReqPayload {
   repoId: string;

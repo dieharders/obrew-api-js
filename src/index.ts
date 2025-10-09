@@ -8,48 +8,26 @@
  * standalone API functions for use in any TypeScript/JavaScript project.
  *
  * @example
- * ```tsx
- * // React usage
- * import { useObrew } from 'obrew-api-js'
- *
- * function App() {
- *   const { connect, getServices } = useObrew()
- *
- *   useEffect(() => {
- *     async function init() {
- *       const connection = await connect()
- *       if (connection?.success) {
- *         const { serviceApis } = await getServices()
- *         // Use serviceApis.textInference, serviceApis.memory, etc.
- *       }
- *     }
- *     init()
- *   }, [connect, getServices])
- *
- *   return <div>Your App</div>
- * }
- * ```
- *
- * @example
  * ```ts
- * // Non-React usage
- * import { getAPIConfig, createServices, setHostConnection } from 'obrew-api-js'
+ * import { client } from 'obrew-api-js'
  *
- * // Configure connection
- * setHostConnection({ domain: 'http://localhost', port: '8008' })
- *
- * // Get services
- * const config = await getAPIConfig()
- * const services = createServices(config)
- *
- * // Use the API
- * const response = await services.textInference.generate({
- *   body: {
- *     messages: [{ role: 'user', content: 'Hello!' }],
- *     responseMode: 'chat'
- *   },
- *   signal: abortController.signal
+ * // Connect to the Obrew backend
+ * const connected = await client.connect({
+ *   domain: 'http://localhost',
+ *   port: '8008'
  * })
+ *
+ * if (connected) {
+ *   // Send a message to the AI
+ *   const response = await client.sendMessage([
+ *     { role: 'user', content: 'Hello!' }
+ *   ])
+ *
+ *   console.log(response)
+ * }
+ *
+ * // When done, disconnect
+ * client.disconnect()
  * ```
  */
 
@@ -57,33 +35,15 @@
 // Core API Functions
 // ============================================================================
 
-export {
-  fetchConnect,
-  fetchAPIConfig,
-  createServices,
-  connectToLocalProvider,
-  getAPIConfig,
-} from "./api";
-
-// ============================================================================
-// React Hooks
-// ============================================================================
-
-export { useObrew, useHomebrew } from "./hooks";
-export type { ServicesWithConfig } from "./hooks";
+export { obrewClient as client } from "./client";
 
 // ============================================================================
 // Utility Functions
 // ============================================================================
 
 export {
-  getHostConnection, // May embed this in consuming app
-  setHostConnection, // May embed this in consuming app
-  createDomainName,
-  defaultPort,
-  defaultDomain,
+  DEFAULT_OBREW_CONFIG,
 } from "./utils";
-export type { HostConnection } from "./utils";
 
 // ============================================================================
 // Type Exports - Message & Thread Types
