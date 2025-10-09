@@ -16,6 +16,7 @@ import type {
 
 /**
  * Connect to the Obrew backend server
+ * Why named fetchConnect? just `connect`
  * @returns A promise that resolves with connection info or null on failure
  */
 export const fetchConnect = async (): Promise<I_ConnectResponse | null> => {

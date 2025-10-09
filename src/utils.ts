@@ -45,6 +45,7 @@ export const defaultPort = "8008";
 
 /**
  * Default domain for Obrew API
+ * @TODO We need a method to tell whether the app is currently running locally (dev-mode) or hosted on server (web).
  */
 export const defaultDomain = "http://localhost";
 
