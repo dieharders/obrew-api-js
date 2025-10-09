@@ -12,14 +12,14 @@ import type {
   I_GenericAPIRequestParams,
   T_GenericReqPayload,
   T_APIConfigOptions,
-  I_ObrewConfig,
+  I_ConnectionConfig,
 } from "./types";
 
 /**
  * Connect to the Obrew backend server
  * @returns A promise that resolves with connection info or null on failure
  */
-export const connect = async ({config, signal}:{config: I_ObrewConfig, signal?: AbortSignal}): Promise<I_ConnectResponse | null> => {
+export const connect = async ({config, signal}:{config: I_ConnectionConfig, signal?: AbortSignal}): Promise<I_ConnectResponse | null> => {
   const options = {
     ...(signal && {signal}),
     method: "GET",
@@ -46,7 +46,7 @@ export const connect = async ({config, signal}:{config: I_ObrewConfig, signal?: 
  * @returns Service API clients or null if configuration is invalid
  */
 export const createServices = (
-  config: I_ObrewConfig,
+  config: I_ConnectionConfig,
   response: I_API[] | null
 ): I_ServiceApis | null => {
   if (!response || response.length === 0) return null;
@@ -146,7 +146,7 @@ export const createServices = (
  * Get the API configuration from the backend
  * @returns A promise that resolves with the API array or null on failure
  */
-export const fetchAPIConfig = async (config:I_ObrewConfig): Promise<I_API[] | null> => {
+export const fetchAPIConfig = async (config:I_ConnectionConfig): Promise<I_API[] | null> => {
   const options = {
     method: "GET",
     headers: {
