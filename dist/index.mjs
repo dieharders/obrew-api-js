@@ -4,6 +4,7 @@ var defaultDomain = "http://localhost";
 var DEFAULT_OBREW_CONFIG = {
   domain: defaultDomain,
   port: defaultPort,
+  version: "v1",
   enabled: false
   // Disabled by default until connected
 };
@@ -30,7 +31,7 @@ var connect = async ({ config, signal }) => {
   };
   try {
     const origin = createDomainName(config);
-    const res = await fetch(`${origin}/v1/connect`, options);
+    const res = await fetch(`${origin}/${config.version}/connect`, options);
     if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
     if (!res) throw new Error("No response received.");
     return res.json();
@@ -109,7 +110,7 @@ var fetchAPIConfig = async (config) => {
     }
   };
   try {
-    const endpoint = "/v1/services/api";
+    const endpoint = "/${config.version}/services/api";
     const url = createDomainName(config);
     const res = await fetch(`${url}${endpoint}`, options);
     if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);

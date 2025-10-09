@@ -419,6 +419,7 @@ export interface I_Text_Settings {
 export interface I_ObrewConfig {
   domain: string
   port: string
+  version: string
   enabled: boolean
 }
 

@@ -330,6 +330,7 @@ interface I_Text_Settings {
 interface I_ObrewConfig {
     domain: string;
     port: string;
+    version: string;
     enabled: boolean;
 }
 interface I_ObrewConnection {

@@ -17,6 +17,7 @@ export const defaultDomain = "http://localhost";
 export const DEFAULT_OBREW_CONFIG: I_ObrewConfig = {
   domain: defaultDomain,
   port: defaultPort,
+  version: 'v1',
   enabled: false, // Disabled by default until connected
 }
 export const DEFAULT_OBREW_CONNECTION: I_ObrewConnection = {
