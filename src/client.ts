@@ -529,8 +529,7 @@ class ObrewClient {
 
   // End @TODO //
 
-  stopChat(saveThread: onChatResponseCallback) {
-    // abortRef.current = true
+  stopChat() {
     this.abortController?.abort()
     this.connection?.api?.textInference.stop()
   }

@@ -2,12 +2,12 @@ type Message = {
     id: string;
     createdAt?: Date | undefined;
     content: string;
-    role: "system" | "user" | "assistant";
+    role: 'system' | 'user' | 'assistant';
 };
 interface I_Message {
     id: string;
     content: string;
-    role: "system" | "user" | "assistant";
+    role: 'system' | 'user' | 'assistant';
     createdAt?: string;
     modelId?: string;
     username?: string;
@@ -103,10 +103,10 @@ declare const DEFAULT_RETRIEVAL_METHOD = "base";
 declare const NATIVE_TOOL_USE = "native";
 declare const UNIVERSAL_TOOL_USE = "universal";
 declare const DEFAULT_TOOL_USE_MODE = "universal";
-type T_ConversationMode = "instruct" | "chat" | "collab";
-type T_ToolResponseMode = "answer" | "result";
+type T_ConversationMode = 'instruct' | 'chat' | 'collab';
+type T_ToolResponseMode = 'answer' | 'result';
 type T_ToolUseMode = typeof UNIVERSAL_TOOL_USE | typeof NATIVE_TOOL_USE;
-type T_ToolSchemaType = "json" | "typescript";
+type T_ToolSchemaType = 'json' | 'typescript';
 interface I_InferenceGenerateOptions extends T_LLM_InferenceOptions {
     responseMode?: T_ConversationMode;
     toolResponseMode?: T_ToolResponseMode;
@@ -246,7 +246,7 @@ interface I_Collection {
         createdAt?: string;
     };
 }
-type T_InputOptionTypes = "options-sel" | "options-multi" | "options-button" | "text" | "text-multi";
+type T_InputOptionTypes = 'options-sel' | 'options-multi' | 'options-button' | 'text' | 'text-multi';
 type T_Tool_Param_Option = string[] | number[];
 interface I_Tool_Parameter {
     name: string;
@@ -427,13 +427,14 @@ interface I_ServiceApis extends I_BaseServiceApis {
     };
 }
 
+type onChatResponseCallback = (text: string | ((t: string) => void)) => void;
 declare class ObrewClient {
     private hasConnected;
     private abortController;
     private connection;
     isConnected(): boolean;
     getConnection(): I_Connection;
-    connect({ config, signal }: {
+    connect({ config, signal, }: {
         config: I_ConnectionConfig;
         signal?: AbortSignal;
     }): Promise<boolean>;
@@ -446,7 +447,23 @@ declare class ObrewClient {
     disconnect(): void;
     private handleStreamingResponse;
     private extractTextFromResponse;
+    private processSseStream;
     sendMessage(messages: Message[], options?: Partial<I_InferenceGenerateOptions>): Promise<string>;
+    getCompletion({ options, signal, }: {
+        options: I_InferenceGenerateOptions;
+        signal: AbortSignal;
+    }): Promise<string | I_NonStreamChatbotResponse | I_NonStreamPlayground | I_GenericAPIResponse<any> | Response | null | undefined>;
+    onNonStreamResult({ result, setResponseText, }: {
+        result: any;
+        setResponseText?: onChatResponseCallback;
+    }): void;
+    onStreamResult({ result, setResponseText, }: {
+        result: string;
+        setResponseText?: onChatResponseCallback;
+    }): Promise<void>;
+    onStreamEvent(eventName: string): void;
+    append(prompt: I_Message, setEventState: (ev: string) => void, setIsLoading: (b: boolean) => void): Promise<void>;
+    stopChat(): void;
     loadModel(modelPath: string, modelId: string): Promise<boolean>;
     getLoadedModel(): Promise<I_LoadedModelRes | null>;
     getInstalledModels(): Promise<T_InstalledTextModel[]>;

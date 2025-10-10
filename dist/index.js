@@ -1,6 +1,9 @@
 'use strict';
 
 // src/utils.ts
+var SSE_DATA_PREFIX = "data:";
+var SSE_EVENT_PREFIX = "event:";
+var SSE_COMMENT_PREFIX = ":";
 var defaultPort = "8008";
 var defaultDomain = "http://localhost";
 var DEFAULT_OBREW_CONFIG = {
@@ -23,7 +26,10 @@ var createDomainName = (config) => {
 };
 
 // src/api.ts
-var connect = async ({ config, signal }) => {
+var connect = async ({
+  config,
+  signal
+}) => {
   const options = {
     ...signal && { signal },
     method: "GET",
@@ -137,8 +143,8 @@ var ObrewClient = class {
   }
   // Data Methods //
   /**
-  * Check if service is connected
-  */
+   * Check if service is connected
+   */
   isConnected() {
     return this.hasConnected && !!this.connection.api && this.connection.config.enabled;
   }
@@ -150,15 +156,21 @@ var ObrewClient = class {
   }
   // Connection Methods //
   /**
-  * Initialize connection to Obrew backend.
-  */
-  async connect({ config, signal }) {
+   * Initialize connection to Obrew backend.
+   */
+  async connect({
+    config,
+    signal
+  }) {
     if (this.hasConnected) {
       console.log("[obrew] Connection is already active!");
       return false;
     }
     try {
-      const connSuccess = await connect({ config, ...signal && { signal } });
+      const connSuccess = await connect({
+        config,
+        ...signal && { signal }
+      });
       if (!connSuccess?.success) throw new Error(connSuccess?.message);
       const apiConfig = await fetchAPIConfig(config);
       if (!apiConfig) throw new Error("No api returned.");
@@ -177,18 +189,24 @@ var ObrewClient = class {
     }
   }
   /**
-  * Ping server to check if it's responsive.
-  * Used for server discovery and health checks.
-  */
+   * Ping server to check if it's responsive.
+   * Used for server discovery and health checks.
+   */
   async ping(timeout = 5e3) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
     const startTime = performance.now();
     try {
-      const connSuccess = await connect({ config: this.connection.config, signal: controller.signal });
+      const connSuccess = await connect({
+        config: this.connection.config,
+        signal: controller.signal
+      });
       clearTimeout(timeoutId);
       if (!connSuccess?.success) throw new Error(connSuccess?.message);
-      return { success: true, responseTime: Math.round(performance.now() - startTime) };
+      return {
+        success: true,
+        responseTime: Math.round(performance.now() - startTime)
+      };
     } catch (error) {
       clearTimeout(timeoutId);
       return {
@@ -198,8 +216,8 @@ var ObrewClient = class {
     }
   }
   /**
-  * Cancel ongoing request
-  */
+   * Cancel ongoing request
+   */
   cancelRequest() {
     if (this.abortController) {
       this.abortController.abort();
@@ -207,14 +225,14 @@ var ObrewClient = class {
     }
   }
   /**
-  * Disconnect from service
-  */
+   * Disconnect from service
+   */
   disconnect() {
     this.cancelRequest();
     this.connection.api = null;
     this.hasConnected = false;
   }
-  // Core API Helper Methods //
+  // Core Helper Methods //
   /**
    * Handle streaming response from AI
    */
@@ -267,6 +285,52 @@ var ObrewClient = class {
     return String(response);
   }
   /**
+   * Handle server sent event stream for AI chats
+   * // https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_streams
+   * @TODO See if this is needed or can be merged with above?
+   */
+  async processSseStream(fetchStream, {
+    onData,
+    onFinish,
+    onEvent,
+    onComment
+  }, abortRef = null) {
+    const reader = fetchStream.body?.getReader();
+    if (!reader) {
+      return;
+    }
+    const decoder = new TextDecoder("utf-8");
+    let readingBuffer = await reader.read();
+    while (!readingBuffer.done && !abortRef) {
+      try {
+        const result = typeof readingBuffer.value === "string" ? readingBuffer.value : decoder.decode(readingBuffer.value, { stream: true });
+        const lines = result.split("\n");
+        for (const line of lines) {
+          if (line?.startsWith(SSE_COMMENT_PREFIX)) {
+            const comment = line.slice(SSE_COMMENT_PREFIX.length).trim();
+            await onComment?.(comment);
+          }
+          if (line?.startsWith(SSE_EVENT_PREFIX)) {
+            const eventName = line.slice(SSE_EVENT_PREFIX.length).trim();
+            await onEvent?.(eventName);
+          }
+          if (line?.startsWith(SSE_DATA_PREFIX)) {
+            const eventData = line.slice(SSE_DATA_PREFIX.length).trim();
+            await onData(eventData);
+          }
+        }
+      } catch (err) {
+        console.log("[UI] Error reading stream data buffer:", err);
+      }
+      readingBuffer = await reader.read();
+    }
+    if (!readingBuffer.done) {
+      await reader.cancel();
+    }
+    await onFinish();
+  }
+  // Core API Methods //
+  /**
    * Send a message and get AI response
    * Handles both streaming and non-streaming responses
    */
@@ -311,6 +375,101 @@ var ObrewClient = class {
       }
       throw error;
     }
+  }
+  // @TODO See if below can be used or merged with sendMessage
+  //
+  async getCompletion({
+    options,
+    signal
+  }) {
+    try {
+      return this.connection?.api?.textInference.generate({
+        body: options,
+        signal
+        // controller.current.signal,
+      });
+    } catch (error) {
+      console.log(`[client] Prompt completion error: ${error}`);
+      return;
+    }
+  }
+  onNonStreamResult({
+    result,
+    setResponseText
+  }) {
+    console.log("[client] non-stream finished!");
+    if (result?.text) setResponseText?.(result?.text);
+  }
+  async onStreamResult({
+    result,
+    setResponseText
+  }) {
+    try {
+      const parsedResult = result ? JSON.parse(result) : null;
+      const data = parsedResult?.data;
+      const eventName = parsedResult?.event;
+      const text = data?.text;
+      if (text)
+        setResponseText?.((prevText) => {
+          if (eventName === "GENERATING_CONTENT") return text;
+          return prevText += text;
+        });
+      return;
+    } catch (err) {
+      console.log("[client] onStreamResult err:", typeof result, " | ", err);
+      return;
+    }
+  }
+  onStreamEvent(eventName) {
+    console.log(`[client] onStreamEvent ${eventName}`);
+  }
+  async append(prompt, setEventState, setIsLoading) {
+    if (!prompt) return;
+    const newUserMsg = {
+      id: prompt.id,
+      role: prompt.role,
+      content: prompt.content,
+      // always assign prompt content w/o template
+      createdAt: prompt.createdAt,
+      ...prompt.role === "user" && { username: prompt?.username || "" },
+      ...prompt.role === "assistant" && { modelId: prompt?.modelId || "" }
+    };
+    try {
+      console.log("[Chat] Sending request to inference server...", newUserMsg);
+      const response = {};
+      if (response?.body?.getReader) {
+        await this.processSseStream(
+          response,
+          {
+            onData: (res) => this.onStreamResult({ result: res }),
+            onFinish: async () => {
+              console.log("[Chat] stream finished!");
+              return;
+            },
+            onEvent: async (str) => {
+              this.onStreamEvent(str);
+              const displayEventStr = str.replace(/_/g, " ") + "...";
+              if (str) setEventState(displayEventStr);
+            },
+            onComment: async (str) => {
+              console.log("[Chat] onComment", str);
+              return;
+            }
+          },
+          this.abortController
+        );
+      } else this.onNonStreamResult({ result: response });
+      setIsLoading(false);
+      return;
+    } catch (err) {
+      setIsLoading(false);
+      console.log(`[client] ${err}`);
+    }
+  }
+  // End @TODO //
+  stopChat() {
+    this.abortController?.abort();
+    this.connection?.api?.textInference.stop();
   }
   /**
    * Load a text model
