@@ -1,4 +1,4 @@
-import { createServices, fetchAPIConfig, connect } from "./api";
+import { createServices, fetchAPIConfig, connect as apiConnect } from "./api";
 import { I_Connection, I_ConnectionConfig, Message, I_InferenceGenerateOptions } from "./types";
 import { DEFAULT_OBREW_CONNECTION } from "./utils";
 
@@ -41,7 +41,7 @@ class ObrewClient {
     }
     try {
       // Attempt handshake connection
-      const connSuccess = await connect({config, ...(signal && {signal})})
+      const connSuccess = await apiConnect({config, ...(signal && {signal})})
       if (!connSuccess?.success) throw new Error(connSuccess?.message);
       // Get API configuration and create services
       const apiConfig = await fetchAPIConfig(config)
@@ -82,7 +82,7 @@ class ObrewClient {
     const startTime = performance.now()
 
     try {
-      const connSuccess = await connect({config: this.connection.config, signal: controller.signal})
+      const connSuccess = await apiConnect({config: this.connection.config, signal: controller.signal})
       clearTimeout(timeoutId)
       // Check
       if (!connSuccess?.success) throw new Error(connSuccess?.message);
