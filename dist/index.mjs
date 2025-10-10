@@ -150,13 +150,13 @@ var ObrewClient = class {
   /**
   * Initialize connection to Obrew backend.
   */
-  async connect(config) {
+  async connect({ config, signal }) {
     if (this.hasConnected) {
       console.log("[obrew] Connection is already active!");
       return false;
     }
     try {
-      const connSuccess = await connect({ config });
+      const connSuccess = await connect({ config, ...signal && { signal } });
       if (!connSuccess?.success) throw new Error(connSuccess?.message);
       const apiConfig = await fetchAPIConfig(config);
       if (!apiConfig) throw new Error("No api returned.");

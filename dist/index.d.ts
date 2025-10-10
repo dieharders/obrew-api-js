@@ -433,7 +433,10 @@ declare class ObrewClient {
     private connection;
     isConnected(): boolean;
     getConnection(): I_Connection;
-    connect(config: I_ConnectionConfig): Promise<boolean>;
+    connect({ config, signal }: {
+        config: I_ConnectionConfig;
+        signal?: AbortSignal;
+    }): Promise<boolean>;
     ping(timeout?: number): Promise<{
         success: boolean;
         responseTime?: number;

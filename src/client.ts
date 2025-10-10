@@ -34,14 +34,14 @@ class ObrewClient {
   /**
   * Initialize connection to Obrew backend.
   */
-  async connect(config: I_ConnectionConfig): Promise<boolean> {
+  async connect({config, signal}: {config: I_ConnectionConfig, signal?: AbortSignal}): Promise<boolean> {
     if (this.hasConnected) {
         console.log('[obrew] Connection is already active!')
         return false
     }
     try {
       // Attempt handshake connection
-      const connSuccess = await connect({config})
+      const connSuccess = await connect({config, ...(signal && {signal})})
       if (!connSuccess?.success) throw new Error(connSuccess?.message);
       // Get API configuration and create services
       const apiConfig = await fetchAPIConfig(config)
