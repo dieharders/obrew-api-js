@@ -4,6 +4,7 @@ import {
   I_ConnectionConfig,
   Message,
   I_InferenceGenerateOptions,
+  I_Message,
 } from './types'
 import {
   DEFAULT_OBREW_CONNECTION,
@@ -219,6 +220,7 @@ class ObrewClient {
 
   /**
    * Handle server sent event stream for AI chats
+   * // https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_streams
    * @TODO See if this is needed or can be merged with above?
    */
   private async processSseStream(
@@ -234,7 +236,7 @@ class ObrewClient {
       onEvent?: (str: string) => Promise<void>
       onComment?: (str: string) => Promise<void>
     },
-    abortRef = { current: false }
+    abortRef: AbortController | null = null
   ) {
     const reader = fetchStream.body?.getReader()
 
@@ -245,7 +247,7 @@ class ObrewClient {
     const decoder = new TextDecoder('utf-8')
 
     let readingBuffer = await reader.read()
-    while (!readingBuffer.done && !abortRef.current) {
+    while (!readingBuffer.done && !abortRef) {
       try {
         const result =
           typeof readingBuffer.value === 'string'
@@ -355,7 +357,6 @@ class ObrewClient {
 
   // @TODO See if below can be used or merged with sendMessage
   //
-  // https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_streams
   async getCompletion({
     options,
     signal,
@@ -363,7 +364,7 @@ class ObrewClient {
     options: I_InferenceGenerateOptions
     signal: AbortSignal
   }) {
-    // controller.current = new AbortController();
+    // this.abortController = new AbortController();
     try {
       return this.connection?.api?.textInference.generate({
         body: options,
@@ -381,10 +382,10 @@ class ObrewClient {
     setResponseText,
   }: {
     result: any
-    setResponseText: onChatResponseCallback
+    setResponseText?: onChatResponseCallback
   }) {
     console.log('[client] non-stream finished!')
-    if (result?.text) setResponseText(result?.text)
+    if (result?.text) setResponseText?.(result?.text)
   }
 
   async onStreamResult({
@@ -392,7 +393,7 @@ class ObrewClient {
     setResponseText,
   }: {
     result: string
-    setResponseText: onChatResponseCallback
+    setResponseText?: onChatResponseCallback
   }) {
     try {
       // Server sends data back
@@ -401,7 +402,7 @@ class ObrewClient {
       const eventName = parsedResult?.event
       const text = data?.text
       if (text)
-        setResponseText(prevText => {
+        setResponseText?.(prevText => {
           // Overwrite prev response if final content is received
           if (eventName === 'GENERATING_CONTENT') return text
           return (prevText += text)
@@ -427,7 +428,112 @@ class ObrewClient {
     console.log(`[client] onStreamEvent ${eventName}`)
   }
 
+  async append(
+    prompt: I_Message,
+    setEventState: (ev: string) => void,
+    setIsLoading: (b: boolean) => void
+  ) {
+    if (!prompt) return
+
+    // Create an id for the assistant's response
+    // setResponseId(nanoid())
+
+    // Create new message for user's prompt
+    const newUserMsg: I_Message = {
+      id: prompt.id,
+      role: prompt.role,
+      content: prompt.content, // always assign prompt content w/o template
+      createdAt: prompt.createdAt,
+      ...(prompt.role === 'user' && { username: prompt?.username || '' }),
+      ...(prompt.role === 'assistant' && { modelId: prompt?.modelId || '' }),
+    }
+    // Add to/Update messages list
+    // setCurrentMessages(prev => {
+    //   if (!currentThreadId.current) {
+    //     return [newUserMsg]
+    //   }
+    //   return [...prev, newUserMsg]
+    // })
+
+    // Create new thread
+    // setThreads({})
+
+    // Request response
+    try {
+      // Reset state
+      // setResponseText('')
+      // setIsLoading(true)
+      // abortRef.current = false
+
+      // Send request completion for prompt
+      console.log('[Chat] Sending request to inference server...', newUserMsg)
+      // const mode =
+      //   settings?.attention?.response_mode || DEFAULT_CONVERSATION_MODE
+      // const options: I_InferenceGenerateOptions = {
+      //   responseMode: mode,
+      //   toolResponseMode: settings?.attention?.tool_response_mode,
+      //   toolUseMode: settings?.attention?.tool_use_mode,
+      //   tools: settings?.tools?.assigned,
+      //   prompt: prompt?.content,
+      //   promptTemplate: settings?.prompt?.promptTemplate?.text,
+      //   systemMessage: settings?.system?.systemMessage,
+      //   memory: settings?.memory,
+      //   ...settings?.performance,
+      //   ...settings?.response,
+      // }
+
+      // @TODO Call a specific agent by name
+      const response = {} as Response // await this.getCompletion(options)
+      // console.log('[Chat] Prompt response', response)
+
+      // Check success if streamed
+      if (response?.body?.getReader) {
+        // Process the stream into text tokens
+        await this.processSseStream(
+          response,
+          {
+            onData: (res: string) => this.onStreamResult({ result: res }),
+            onFinish: async () => {
+              console.log('[Chat] stream finished!')
+              return
+            },
+            onEvent: async str => {
+              this.onStreamEvent(str)
+              const displayEventStr = str.replace(/_/g, ' ') + '...'
+              if (str) setEventState(displayEventStr)
+            },
+            onComment: async str => {
+              console.log('[Chat] onComment', str)
+              return
+            },
+          },
+          this.abortController
+        )
+      }
+
+      // Check success if not streamed
+      else this.onNonStreamResult({ result: response })
+
+      // Save final results
+      // setCurrentMessages()
+
+      // Finish
+      setIsLoading(false)
+      return
+    } catch (err) {
+      setIsLoading(false)
+      console.log(`[client] ${err}`)
+      // toast.error(`Prompt request error: \n ${err}`)
+    }
+  }
+
   // End @TODO //
+
+  stopChat(saveThread: onChatResponseCallback) {
+    // abortRef.current = true
+    this.abortController?.abort()
+    this.connection?.api?.textInference.stop()
+  }
 
   /**
    * Load a text model
