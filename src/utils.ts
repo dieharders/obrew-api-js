@@ -5,6 +5,11 @@
 
 import { I_ConnectionConfig, I_Connection } from "./types";
 
+// Chat events
+export const SSE_DATA_PREFIX = 'data:'
+export const SSE_EVENT_PREFIX = 'event:'
+export const SSE_COMMENT_PREFIX = ':'
+
 /**
  * Default port for Obrew API
  */

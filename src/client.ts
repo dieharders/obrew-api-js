@@ -1,6 +1,18 @@
-import { createServices, fetchAPIConfig, connect as apiConnect } from "./api";
-import { I_Connection, I_ConnectionConfig, Message, I_InferenceGenerateOptions } from "./types";
-import { DEFAULT_OBREW_CONNECTION } from "./utils";
+import { createServices, fetchAPIConfig, connect as apiConnect } from './api'
+import {
+  I_Connection,
+  I_ConnectionConfig,
+  Message,
+  I_InferenceGenerateOptions,
+} from './types'
+import {
+  DEFAULT_OBREW_CONNECTION,
+  SSE_COMMENT_PREFIX,
+  SSE_DATA_PREFIX,
+  SSE_EVENT_PREFIX,
+} from './utils'
+
+type onChatResponseCallback = (text: string | ((t: string) => void)) => void
 
 /**
  * ObrewClient responsibilities:
@@ -14,12 +26,16 @@ class ObrewClient {
   private connection: I_Connection = DEFAULT_OBREW_CONNECTION
 
   // Data Methods //
-  
+
   /**
-  * Check if service is connected
-  */
+   * Check if service is connected
+   */
   isConnected(): boolean {
-    return this.hasConnected && !!this.connection.api && this.connection.config.enabled
+    return (
+      this.hasConnected &&
+      !!this.connection.api &&
+      this.connection.config.enabled
+    )
   }
 
   /**
@@ -32,27 +48,36 @@ class ObrewClient {
   // Connection Methods //
 
   /**
-  * Initialize connection to Obrew backend.
-  */
-  async connect({config, signal}: {config: I_ConnectionConfig, signal?: AbortSignal}): Promise<boolean> {
+   * Initialize connection to Obrew backend.
+   */
+  async connect({
+    config,
+    signal,
+  }: {
+    config: I_ConnectionConfig
+    signal?: AbortSignal
+  }): Promise<boolean> {
     if (this.hasConnected) {
-        console.log('[obrew] Connection is already active!')
-        return false
+      console.log('[obrew] Connection is already active!')
+      return false
     }
     try {
       // Attempt handshake connection
-      const connSuccess = await apiConnect({config, ...(signal && {signal})})
-      if (!connSuccess?.success) throw new Error(connSuccess?.message);
+      const connSuccess = await apiConnect({
+        config,
+        ...(signal && { signal }),
+      })
+      if (!connSuccess?.success) throw new Error(connSuccess?.message)
       // Get API configuration and create services
       const apiConfig = await fetchAPIConfig(config)
-      if (!apiConfig) throw new Error("No api returned.");
+      if (!apiConfig) throw new Error('No api returned.')
       const serviceApis = createServices(config, apiConfig)
 
       if (serviceApis) {
         this.hasConnected = true
         console.log('[obrew] Successfully connected to Obrew API')
         // Store config in connection after successful connect
-        this.connection = {config, api: serviceApis}
+        this.connection = { config, api: serviceApis }
         return true
       }
 
@@ -65,12 +90,10 @@ class ObrewClient {
   }
 
   /**
-  * Ping server to check if it's responsive.
-  * Used for server discovery and health checks.
-  */
-  async ping(
-    timeout = 5000
-  ): Promise<{
+   * Ping server to check if it's responsive.
+   * Used for server discovery and health checks.
+   */
+  async ping(timeout = 5000): Promise<{
     success: boolean
     responseTime?: number
     error?: string
@@ -82,11 +105,17 @@ class ObrewClient {
     const startTime = performance.now()
 
     try {
-      const connSuccess = await apiConnect({config: this.connection.config, signal: controller.signal})
+      const connSuccess = await apiConnect({
+        config: this.connection.config,
+        signal: controller.signal,
+      })
       clearTimeout(timeoutId)
       // Check
-      if (!connSuccess?.success) throw new Error(connSuccess?.message);
-      return { success: true, responseTime: Math.round(performance.now() - startTime) }      
+      if (!connSuccess?.success) throw new Error(connSuccess?.message)
+      return {
+        success: true,
+        responseTime: Math.round(performance.now() - startTime),
+      }
     } catch (error) {
       clearTimeout(timeoutId)
       return {
@@ -97,8 +126,8 @@ class ObrewClient {
   }
 
   /**
-  * Cancel ongoing request
-  */
+   * Cancel ongoing request
+   */
   cancelRequest(): void {
     if (this.abortController) {
       this.abortController.abort()
@@ -107,15 +136,15 @@ class ObrewClient {
   }
 
   /**
-  * Disconnect from service
-  */
+   * Disconnect from service
+   */
   disconnect(): void {
     this.cancelRequest()
     this.connection.api = null
     this.hasConnected = false
   }
 
-  // Core API Helper Methods //
+  // Core Helper Methods //
 
   /**
    * Handle streaming response from AI
@@ -187,7 +216,76 @@ class ObrewClient {
     // Fallback to string conversion
     return String(response)
   }
-  
+
+  /**
+   * Handle server sent event stream for AI chats
+   * @TODO See if this is needed or can be merged with above?
+   */
+  private async processSseStream(
+    fetchStream: Response,
+    {
+      onData,
+      onFinish,
+      onEvent,
+      onComment,
+    }: {
+      onData: (str: string) => Promise<void>
+      onFinish: () => Promise<void>
+      onEvent?: (str: string) => Promise<void>
+      onComment?: (str: string) => Promise<void>
+    },
+    abortRef = { current: false }
+  ) {
+    const reader = fetchStream.body?.getReader()
+
+    if (!reader) {
+      return // If reader is not available
+    }
+
+    const decoder = new TextDecoder('utf-8')
+
+    let readingBuffer = await reader.read()
+    while (!readingBuffer.done && !abortRef.current) {
+      try {
+        const result =
+          typeof readingBuffer.value === 'string'
+            ? readingBuffer.value
+            : decoder.decode(readingBuffer.value, { stream: true })
+
+        const lines = result.split('\n')
+
+        for (const line of lines) {
+          if (line?.startsWith(SSE_COMMENT_PREFIX)) {
+            const comment = line.slice(SSE_COMMENT_PREFIX.length).trim()
+            await onComment?.(comment)
+          }
+
+          if (line?.startsWith(SSE_EVENT_PREFIX)) {
+            const eventName = line.slice(SSE_EVENT_PREFIX.length).trim()
+            await onEvent?.(eventName)
+          }
+
+          if (line?.startsWith(SSE_DATA_PREFIX)) {
+            const eventData = line.slice(SSE_DATA_PREFIX.length).trim()
+            await onData(eventData)
+          }
+        }
+      } catch (err) {
+        console.log('[UI] Error reading stream data buffer:', err)
+      }
+
+      readingBuffer = await reader.read()
+    }
+
+    if (!readingBuffer.done) {
+      await reader.cancel()
+    }
+
+    await onFinish()
+  }
+
+  // Core API Methods //
+
   /**
    * Send a message and get AI response
    * Handles both streaming and non-streaming responses
@@ -254,6 +352,82 @@ class ObrewClient {
       throw error
     }
   }
+
+  // @TODO See if below can be used or merged with sendMessage
+  //
+  // https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_streams
+  async getCompletion({
+    options,
+    signal,
+  }: {
+    options: I_InferenceGenerateOptions
+    signal: AbortSignal
+  }) {
+    // controller.current = new AbortController();
+    try {
+      return this.connection?.api?.textInference.generate({
+        body: options,
+        signal: signal, // controller.current.signal,
+      })
+    } catch (error) {
+      console.log(`[client] Prompt completion error: ${error}`)
+      // toast.error(`Prompt completion error: ${error}`);
+      return
+    }
+  }
+
+  onNonStreamResult({
+    result,
+    setResponseText,
+  }: {
+    result: any
+    setResponseText: onChatResponseCallback
+  }) {
+    console.log('[client] non-stream finished!')
+    if (result?.text) setResponseText(result?.text)
+  }
+
+  async onStreamResult({
+    result,
+    setResponseText,
+  }: {
+    result: string
+    setResponseText: onChatResponseCallback
+  }) {
+    try {
+      // Server sends data back
+      const parsedResult = result ? JSON.parse(result) : null
+      const data = parsedResult?.data
+      const eventName = parsedResult?.event
+      const text = data?.text
+      if (text)
+        setResponseText(prevText => {
+          // Overwrite prev response if final content is received
+          if (eventName === 'GENERATING_CONTENT') return text
+          return (prevText += text)
+        })
+      return
+    } catch (err) {
+      console.log('[client] onStreamResult err:', typeof result, ' | ', err)
+      return
+    }
+  }
+
+  onStreamEvent(eventName: string) {
+    switch (eventName) {
+      case 'FEEDING_PROMPT':
+        break
+      case 'GENERATING_TOKENS':
+        break
+      case 'GENERATING_CONTENT':
+        break
+      default:
+        break
+    }
+    console.log(`[client] onStreamEvent ${eventName}`)
+  }
+
+  // End @TODO //
 
   /**
    * Load a text model
