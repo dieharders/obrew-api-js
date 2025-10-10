@@ -116,7 +116,7 @@ var fetchAPIConfig = async (config) => {
     }
   };
   try {
-    const endpoint = "/${config.version}/services/api";
+    const endpoint = `/${config.version}/services/api`;
     const url = createDomainName(config);
     const res = await fetch(`${url}${endpoint}`, options);
     if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
