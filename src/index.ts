@@ -35,33 +35,31 @@
 // Core API Functions
 // ============================================================================
 
-export { obrewClient as client } from "./client";
+export { obrewClient as client } from './client'
 
 // ============================================================================
 // Utility Functions
 // ============================================================================
 
-export {
-  DEFAULT_OBREW_CONFIG,
-} from "./utils";
+export { DEFAULT_OBREW_CONFIG } from './utils'
 
 // ============================================================================
 // Type Exports - Message & Thread Types
 // ============================================================================
 
-export type { Message, I_Message, I_Thread } from "./types";
+export type { Message, I_Message, I_Thread } from './types'
 
 // ============================================================================
 // Type Exports - Model Types
 // ============================================================================
 
-export { ModelID } from "./types";
+export { ModelID } from './types'
 
 export type {
   T_ModelConfig,
   I_ModelConfigs,
   T_InstalledTextModel,
-} from "./types";
+} from './types'
 
 // ============================================================================
 // Type Exports - LLM Configuration Types
@@ -72,7 +70,7 @@ export type {
   I_Response_State,
   I_LLM_Call_Options,
   I_LLM_Options,
-} from "./types";
+} from './types'
 
 // ============================================================================
 // Type Exports - Conversation & Inference Types
@@ -88,7 +86,7 @@ export {
   NATIVE_TOOL_USE,
   UNIVERSAL_TOOL_USE,
   DEFAULT_TOOL_USE_MODE,
-} from "./types";
+} from './types'
 
 export type {
   T_ConversationMode,
@@ -99,7 +97,7 @@ export type {
   T_LLM_InferenceOptions,
   I_LoadTextModelRequestPayload,
   I_LoadedModelRes,
-} from "./types";
+} from './types'
 
 // ============================================================================
 // Type Exports - Response Types
@@ -109,7 +107,7 @@ export type {
   I_NonStreamChatbotResponse,
   I_NonStreamPlayground,
   I_GenericAPIResponse,
-} from "./types";
+} from './types'
 
 // ============================================================================
 // Type Exports - Request Types
@@ -123,7 +121,7 @@ export type {
   T_SaveChatThreadAPIRequest,
   T_GetChatThreadAPIRequest,
   T_DeleteChatThreadAPIRequest,
-} from "./types";
+} from './types'
 
 // ============================================================================
 // Type Exports - Knowledge & Memory Types
@@ -136,7 +134,7 @@ export type {
   I_Source,
   I_DocumentChunk,
   I_Collection,
-} from "./types";
+} from './types'
 
 // ============================================================================
 // Type Exports - Tool Types
@@ -149,7 +147,7 @@ export type {
   I_Tool_Def_Parameter,
   I_ToolFunctionSchemaRes,
   I_Tool_Definition,
-} from "./types";
+} from './types'
 
 // ============================================================================
 // Type Exports - Settings Types
@@ -166,7 +164,7 @@ export type {
   I_Attention_State,
   I_Tools_Inference_State,
   I_Text_Settings,
-} from "./types";
+} from './types'
 
 // ============================================================================
 // Type Exports - API Configuration Types
@@ -179,8 +177,8 @@ export type {
   I_ServicesResponse,
   I_ConnectResponse,
   I_ConnectionConfig,
-  I_Connection
-} from "./types";
+  I_Connection,
+} from './types'
 
 // ============================================================================
 // Type Exports - Service API Types
@@ -193,4 +191,4 @@ export type {
   I_DeleteTextModelReqPayload,
   I_ToolSchemaReqPayload,
   I_ServiceApis,
-} from "./types";
+} from './types'
