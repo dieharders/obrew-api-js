@@ -9,7 +9,7 @@ import { DEFAULT_OBREW_CONNECTION } from "./utils";
  * 3. Handle teardown/cleanup of network calls, etc when client unmounts/disconnects
  */
 class ObrewClient {
-  private isConnected = false
+  private hasConnected = false
   private abortController: AbortController | null = null
   private connection: I_Connection = DEFAULT_OBREW_CONNECTION
 
@@ -18,8 +18,8 @@ class ObrewClient {
   /**
   * Check if service is connected
   */
-  isServiceConnected(): boolean {
-    return this.isConnected && !!this.connection.api
+  isConnected(): boolean {
+    return this.hasConnected && !!this.connection.api && this.connection.config.enabled
   }
 
   /**
@@ -35,7 +35,7 @@ class ObrewClient {
   * Initialize connection to Obrew backend.
   */
   async connect(config: I_ConnectionConfig): Promise<boolean> {
-    if (this.isConnected) {
+    if (this.hasConnected) {
         console.log('[obrew] Connection is already active!')
         return false
     }
@@ -49,7 +49,7 @@ class ObrewClient {
       const serviceApis = createServices(config, apiConfig)
 
       if (serviceApis) {
-        this.isConnected = true
+        this.hasConnected = true
         console.log('[obrew] Successfully connected to Obrew API')
         // Store config in connection after successful connect
         this.connection = {config, api: serviceApis}
@@ -59,7 +59,7 @@ class ObrewClient {
       return false
     } catch (error) {
       console.error('[obrew] Failed to connect to Obrew:', error)
-      this.isConnected = false
+      this.hasConnected = false
       return false
     }
   }
@@ -112,7 +112,7 @@ class ObrewClient {
   disconnect(): void {
     this.cancelRequest()
     this.connection.api = null
-    this.isConnected = false
+    this.hasConnected = false
   }
 
   // Core API Helper Methods //
@@ -196,7 +196,7 @@ class ObrewClient {
     messages: Message[],
     options?: Partial<I_InferenceGenerateOptions>
   ): Promise<string> {
-    if (!this.isServiceConnected()) {
+    if (!this.isConnected()) {
       throw new Error('Not connected to Obrew service')
     }
 
@@ -259,7 +259,7 @@ class ObrewClient {
    * Load a text model
    */
   async loadModel(modelPath: string, modelId: string): Promise<boolean> {
-    if (!this.isServiceConnected()) {
+    if (!this.isConnected()) {
       throw new Error('Not connected to Obrew service')
     }
 
@@ -290,7 +290,7 @@ class ObrewClient {
    * Get currently loaded model info
    */
   async getLoadedModel() {
-    if (!this.isServiceConnected()) {
+    if (!this.isConnected()) {
       return null
     }
 
@@ -307,7 +307,7 @@ class ObrewClient {
    * Get list of installed models
    */
   async getInstalledModels() {
-    if (!this.isServiceConnected()) {
+    if (!this.isConnected()) {
       return []
     }
 

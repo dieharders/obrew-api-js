@@ -428,10 +428,10 @@ interface I_ServiceApis extends I_BaseServiceApis {
 }
 
 declare class ObrewClient {
-    private isConnected;
+    private hasConnected;
     private abortController;
     private connection;
-    isServiceConnected(): boolean;
+    isConnected(): boolean;
     getConnection(): I_Connection;
     connect(config: I_ConnectionConfig): Promise<boolean>;
     ping(timeout?: number): Promise<{

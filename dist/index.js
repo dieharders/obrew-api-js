@@ -131,7 +131,7 @@ var fetchAPIConfig = async (config) => {
 // src/client.ts
 var ObrewClient = class {
   constructor() {
-    this.isConnected = false;
+    this.hasConnected = false;
     this.abortController = null;
     this.connection = DEFAULT_OBREW_CONNECTION;
   }
@@ -139,8 +139,8 @@ var ObrewClient = class {
   /**
   * Check if service is connected
   */
-  isServiceConnected() {
-    return this.isConnected && !!this.connection.api;
+  isConnected() {
+    return this.hasConnected && !!this.connection.api && this.connection.config.enabled;
   }
   /**
    * Return the current connection
@@ -153,7 +153,7 @@ var ObrewClient = class {
   * Initialize connection to Obrew backend.
   */
   async connect(config) {
-    if (this.isConnected) {
+    if (this.hasConnected) {
       console.log("[obrew] Connection is already active!");
       return false;
     }
@@ -164,7 +164,7 @@ var ObrewClient = class {
       if (!apiConfig) throw new Error("No api returned.");
       const serviceApis = createServices(config, apiConfig);
       if (serviceApis) {
-        this.isConnected = true;
+        this.hasConnected = true;
         console.log("[obrew] Successfully connected to Obrew API");
         this.connection = { config, api: serviceApis };
         return true;
@@ -172,7 +172,7 @@ var ObrewClient = class {
       return false;
     } catch (error) {
       console.error("[obrew] Failed to connect to Obrew:", error);
-      this.isConnected = false;
+      this.hasConnected = false;
       return false;
     }
   }
@@ -212,7 +212,7 @@ var ObrewClient = class {
   disconnect() {
     this.cancelRequest();
     this.connection.api = null;
-    this.isConnected = false;
+    this.hasConnected = false;
   }
   // Core API Helper Methods //
   /**
@@ -271,7 +271,7 @@ var ObrewClient = class {
    * Handles both streaming and non-streaming responses
    */
   async sendMessage(messages, options) {
-    if (!this.isServiceConnected()) {
+    if (!this.isConnected()) {
       throw new Error("Not connected to Obrew service");
     }
     this.abortController = new AbortController();
@@ -316,7 +316,7 @@ var ObrewClient = class {
    * Load a text model
    */
   async loadModel(modelPath, modelId) {
-    if (!this.isServiceConnected()) {
+    if (!this.isConnected()) {
       throw new Error("Not connected to Obrew service");
     }
     try {
@@ -345,7 +345,7 @@ var ObrewClient = class {
    * Get currently loaded model info
    */
   async getLoadedModel() {
-    if (!this.isServiceConnected()) {
+    if (!this.isConnected()) {
       return null;
     }
     try {
@@ -360,7 +360,7 @@ var ObrewClient = class {
    * Get list of installed models
    */
   async getInstalledModels() {
-    if (!this.isServiceConnected()) {
+    if (!this.isConnected()) {
       return [];
     }
     try {
