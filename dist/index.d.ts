@@ -482,10 +482,10 @@ declare class ObrewClient {
     onStreamEvent(eventName: string): void;
     append(prompt: I_Message, setEventState: (ev: string) => void, setIsLoading: (b: boolean) => void): Promise<void>;
     stopChat(): void;
-    installModel(repoId: string, filename?: string): Promise<string | null>;
-    uninstallModel(repoId: string, filename: string): Promise<boolean>;
-    loadModel(modelPath: string, modelId: string): Promise<boolean>;
-    unloadModel(): Promise<boolean>;
+    installModel(repoId: string, filename?: string): Promise<string>;
+    uninstallModel(repoId: string, filename: string): Promise<void>;
+    loadModel(modelPath: string, modelId: string): Promise<void>;
+    unloadModel(): Promise<void>;
     getLoadedModel(): Promise<I_LoadedModelRes | null>;
     getInstalledModels(): Promise<T_InstalledTextModel[]>;
     saveAgentConfig(config: I_Text_Settings): Promise<I_Text_Settings[]>;
