@@ -511,10 +511,13 @@ var ObrewClient = class {
       const response = await this.connection?.api?.textInference.download({
         body
       });
-      if (!response?.data) {
-        throw new Error("No data returned from model installation");
+      if (response?.message) {
+        return response.message;
       }
-      return response.data;
+      if (response?.data) {
+        return response.data;
+      }
+      throw new Error("No response data from model installation");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error occurred";
       throw new Error(`Failed to install model: ${message}`);

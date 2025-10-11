@@ -571,11 +571,18 @@ class ObrewClient {
         body,
       })
 
-      if (!response?.data) {
-        throw new Error('No data returned from model installation')
+      // Server returns {success: true, message: "...", data: null}
+      // Return the message field which contains the success info
+      if (response?.message) {
+        return response.message
       }
 
-      return response.data
+      // Fallback to data field if message is not available
+      if (response?.data) {
+        return response.data
+      }
+
+      throw new Error('No response data from model installation')
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Unknown error occurred'
