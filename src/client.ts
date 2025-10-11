@@ -360,7 +360,7 @@ class ObrewClient {
     }
   }
 
-  // @TODO See if below can be used or merged with sendMessage
+  // @TODO See if below can be used or merged with sendMessage. This came from obrew studio webui.
   //
   async getCompletion({
     options,
@@ -545,6 +545,36 @@ class ObrewClient {
   stopChat() {
     this.abortController?.abort()
     this.connection?.api?.textInference.stop()
+  }
+
+  /**
+   * Install/download a model from a repository
+   * @param repoId - The repository ID of the model to install (e.g., "TheBloke/Mistral-7B-Instruct-v0.2-GGUF")
+   * @param filename - Optional specific filename to download from the repository
+   * @returns The download result message or null on failure
+   */
+  async installModel(
+    repoId: string,
+    filename?: string
+  ): Promise<string | null> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const body: { repoId: string; filename?: string } = { repoId }
+      if (filename) {
+        body.filename = filename
+      }
+
+      const response = await this.connection?.api?.textInference.download({
+        body,
+      })
+      return response?.data || null
+    } catch (error) {
+      console.error('[obrew-client] Failed to install model:', error)
+      return null
+    }
   }
 
   /**
