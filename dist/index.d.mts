@@ -365,6 +365,23 @@ interface I_ConnectResponse {
         docs: string;
     };
 }
+interface I_HardwareInfo {
+    gpu_type: string;
+    gpu_name: string;
+    driver_ver: string;
+    manufacturer: string;
+    dac_type: string;
+    pnp_device_id: string;
+    id?: number;
+    vram_total?: number;
+    vram_used?: number;
+    vram_free?: number;
+}
+interface I_HardwareAuditResponse {
+    success: boolean;
+    message: string;
+    data: I_HardwareInfo[];
+}
 type T_Endpoint = {
     [key: string]: any;
 };
@@ -396,6 +413,7 @@ interface I_ServiceApis extends I_BaseServiceApis {
         download: T_GenericAPIRequest<T_GenericReqPayload, string>;
         delete: T_GenericAPIRequest<I_DeleteTextModelReqPayload, T_GenericDataRes>;
         getModelConfigs: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>;
+        auditHardware: T_GenericAPIRequest<T_GenericReqPayload, I_HardwareInfo[]>;
     };
     memory: {
         addDocument: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>;
@@ -464,12 +482,19 @@ declare class ObrewClient {
     onStreamEvent(eventName: string): void;
     append(prompt: I_Message, setEventState: (ev: string) => void, setIsLoading: (b: boolean) => void): Promise<void>;
     stopChat(): void;
+    installModel(repoId: string, filename?: string): Promise<string | null>;
+    uninstallModel(repoId: string, filename: string): Promise<boolean>;
     loadModel(modelPath: string, modelId: string): Promise<boolean>;
+    unloadModel(): Promise<boolean>;
     getLoadedModel(): Promise<I_LoadedModelRes | null>;
     getInstalledModels(): Promise<T_InstalledTextModel[]>;
+    saveAgentConfig(config: I_Text_Settings): Promise<I_Text_Settings[]>;
+    loadAgentConfig(botName?: string): Promise<I_Text_Settings[]>;
+    deleteAgentConfig(botName: string): Promise<I_Text_Settings[]>;
+    auditHardware(): Promise<I_HardwareInfo[]>;
 }
 declare const obrewClient: ObrewClient;
 
 declare const DEFAULT_OBREW_CONFIG: I_ConnectionConfig;
 
-export { AGENT_RETRIEVAL_METHOD, AUGMENTED_RETRIEVAL_METHOD, BASE_RETRIEVAL_METHOD, DEFAULT_CONVERSATION_MODE, DEFAULT_OBREW_CONFIG, DEFAULT_RETRIEVAL_METHOD, DEFAULT_TOOL_RESPONSE_MODE, DEFAULT_TOOL_USE_MODE, type I_API, type I_Attention_State, type I_BaseServiceApis, type I_ChunkMetadata, type I_Collection, type I_ConnectResponse, type I_Connection, type I_ConnectionConfig, type I_DeleteTextModelReqPayload, type I_DocumentChunk, type I_Endpoint, type I_GenericAPIRequestParams, type I_GenericAPIResponse, type I_InferenceGenerateOptions, type I_Knowledge_State, type I_LLM_Call_Options, type I_LLM_Init_Options, type I_LLM_Options, type I_LoadTextModelRequestPayload, type I_LoadedModelRes, type I_Message, type I_ModelConfigs, type I_Model_State, type I_NonStreamChatbotResponse, type I_NonStreamPlayground, type I_PromptTemplates, type I_Prompt_State, type I_RAG_Strat_State, type I_Response_State, type I_ServiceApis, type I_ServicesResponse, type I_Source, type I_System_State, type I_Text_Settings, type I_Thread, type I_ToolFunctionSchemaRes, type I_ToolSchemaReqPayload, type I_Tool_Def_Parameter, type I_Tool_Definition, type I_Tool_Parameter, type I_Tools_Inference_State, type Message, ModelID, NATIVE_TOOL_USE, type T_APIConfigOptions, type T_ConversationMode, type T_DeleteChatThreadAPIRequest, type T_Endpoint, type T_GenericAPIRequest, type T_GenericDataRes, type T_GenericReqPayload, type T_GetChatThreadAPIRequest, type T_InputOptionTypes, type T_InstalledTextModel, type T_LLM_InferenceOptions, type T_ModelConfig, type T_PromptTemplate, type T_SaveChatThreadAPIRequest, type T_SystemPrompt, type T_SystemPrompts, type T_TextInferenceAPIRequest, type T_ToolResponseMode, type T_ToolSchemaType, type T_ToolUseMode, type T_Tool_Param_Option, UNIVERSAL_TOOL_USE, obrewClient as client };
+export { AGENT_RETRIEVAL_METHOD, AUGMENTED_RETRIEVAL_METHOD, BASE_RETRIEVAL_METHOD, DEFAULT_CONVERSATION_MODE, DEFAULT_OBREW_CONFIG, DEFAULT_RETRIEVAL_METHOD, DEFAULT_TOOL_RESPONSE_MODE, DEFAULT_TOOL_USE_MODE, type I_API, type I_Attention_State, type I_BaseServiceApis, type I_ChunkMetadata, type I_Collection, type I_ConnectResponse, type I_Connection, type I_ConnectionConfig, type I_DeleteTextModelReqPayload, type I_DocumentChunk, type I_Endpoint, type I_GenericAPIRequestParams, type I_GenericAPIResponse, type I_HardwareAuditResponse, type I_HardwareInfo, type I_InferenceGenerateOptions, type I_Knowledge_State, type I_LLM_Call_Options, type I_LLM_Init_Options, type I_LLM_Options, type I_LoadTextModelRequestPayload, type I_LoadedModelRes, type I_Message, type I_ModelConfigs, type I_Model_State, type I_NonStreamChatbotResponse, type I_NonStreamPlayground, type I_PromptTemplates, type I_Prompt_State, type I_RAG_Strat_State, type I_Response_State, type I_ServiceApis, type I_ServicesResponse, type I_Source, type I_System_State, type I_Text_Settings, type I_Thread, type I_ToolFunctionSchemaRes, type I_ToolSchemaReqPayload, type I_Tool_Def_Parameter, type I_Tool_Definition, type I_Tool_Parameter, type I_Tools_Inference_State, type Message, ModelID, NATIVE_TOOL_USE, type T_APIConfigOptions, type T_ConversationMode, type T_DeleteChatThreadAPIRequest, type T_Endpoint, type T_GenericAPIRequest, type T_GenericDataRes, type T_GenericReqPayload, type T_GetChatThreadAPIRequest, type T_InputOptionTypes, type T_InstalledTextModel, type T_LLM_InferenceOptions, type T_ModelConfig, type T_PromptTemplate, type T_SaveChatThreadAPIRequest, type T_SystemPrompt, type T_SystemPrompts, type T_TextInferenceAPIRequest, type T_ToolResponseMode, type T_ToolSchemaType, type T_ToolUseMode, type T_Tool_Param_Option, UNIVERSAL_TOOL_USE, obrewClient as client };

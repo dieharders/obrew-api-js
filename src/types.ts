@@ -460,6 +460,29 @@ export interface I_ConnectResponse {
 }
 
 // ============================================================================
+// Hardware Types
+// ============================================================================
+
+export interface I_HardwareInfo {
+  gpu_type: string
+  gpu_name: string
+  driver_ver: string
+  manufacturer: string
+  dac_type: string
+  pnp_device_id: string
+  id?: number
+  vram_total?: number
+  vram_used?: number
+  vram_free?: number
+}
+
+export interface I_HardwareAuditResponse {
+  success: boolean
+  message: string
+  data: I_HardwareInfo[]
+}
+
+// ============================================================================
 // Service API Types
 // ============================================================================
 
@@ -510,6 +533,7 @@ export interface I_ServiceApis extends I_BaseServiceApis {
     download: T_GenericAPIRequest<T_GenericReqPayload, string>
     delete: T_GenericAPIRequest<I_DeleteTextModelReqPayload, T_GenericDataRes>
     getModelConfigs: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
+    auditHardware: T_GenericAPIRequest<T_GenericReqPayload, I_HardwareInfo[]>
     // getPromptTemplates: T_GenericAPIRequest<
     //   T_GenericReqPayload,
     //   T_GenericDataRes

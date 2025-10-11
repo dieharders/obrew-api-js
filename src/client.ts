@@ -5,6 +5,8 @@ import {
   Message,
   I_InferenceGenerateOptions,
   I_Message,
+  I_HardwareInfo,
+  I_Text_Settings,
 } from './types'
 import {
   DEFAULT_OBREW_CONNECTION,
@@ -59,7 +61,7 @@ class ObrewClient {
     signal?: AbortSignal
   }): Promise<boolean> {
     if (this.hasConnected) {
-      console.log('[obrew] Connection is already active!')
+      console.log('[obrew-client] Connection is already active!')
       return false
     }
     try {
@@ -79,13 +81,16 @@ class ObrewClient {
         // Store config in connection after successful connect
         const enabledConfig = { ...config, enabled: true }
         this.connection = { config: enabledConfig, api: serviceApis }
-        console.log('[obrew] Successfully connected to Obrew API\n', config)
+        console.log(
+          '[obrew-client] Successfully connected to Obrew API\n',
+          config
+        )
         return true
       }
       // Failed
       return false
     } catch (error) {
-      console.error('[obrew] Failed to connect to Obrew:', error)
+      console.error('[obrew-client] Failed to connect to Obrew:', error)
       this.hasConnected = false
       return false
     }
@@ -274,7 +279,7 @@ class ObrewClient {
           }
         }
       } catch (err) {
-        console.log('[UI] Error reading stream data buffer:', err)
+        console.log('[obrew-client] Error reading stream data buffer:', err)
       }
 
       readingBuffer = await reader.read()
@@ -356,7 +361,7 @@ class ObrewClient {
     }
   }
 
-  // @TODO See if below can be used or merged with sendMessage
+  // @TODO See if below can be used or merged with sendMessage. This came from obrew studio webui.
   //
   async getCompletion({
     options,
@@ -372,7 +377,7 @@ class ObrewClient {
         signal: signal, // controller.current.signal,
       })
     } catch (error) {
-      console.log(`[client] Prompt completion error: ${error}`)
+      console.log(`[obrew-client] Prompt completion error: ${error}`)
       // toast.error(`Prompt completion error: ${error}`);
       return
     }
@@ -385,7 +390,7 @@ class ObrewClient {
     result: any
     setResponseText?: onChatResponseCallback
   }) {
-    console.log('[client] non-stream finished!')
+    console.log('[obrew-client] non-stream finished!')
     if (result?.text) setResponseText?.(result?.text)
   }
 
@@ -410,7 +415,12 @@ class ObrewClient {
         })
       return
     } catch (err) {
-      console.log('[client] onStreamResult err:', typeof result, ' | ', err)
+      console.log(
+        '[obrew-client] onStreamResult err:',
+        typeof result,
+        ' | ',
+        err
+      )
       return
     }
   }
@@ -426,7 +436,7 @@ class ObrewClient {
       default:
         break
     }
-    console.log(`[client] onStreamEvent ${eventName}`)
+    console.log(`[obrew-client] onStreamEvent ${eventName}`)
   }
 
   async append(
@@ -467,7 +477,10 @@ class ObrewClient {
       // abortRef.current = false
 
       // Send request completion for prompt
-      console.log('[Chat] Sending request to inference server...', newUserMsg)
+      console.log(
+        '[obrew-client] Sending request to inference server...',
+        newUserMsg
+      )
       // const mode =
       //   settings?.attention?.response_mode || DEFAULT_CONVERSATION_MODE
       // const options: I_InferenceGenerateOptions = {
@@ -485,7 +498,7 @@ class ObrewClient {
 
       // @TODO Call a specific agent by name
       const response = {} as Response // await this.getCompletion(options)
-      // console.log('[Chat] Prompt response', response)
+      // console.log('[obrew-client] Prompt response', response)
 
       // Check success if streamed
       if (response?.body?.getReader) {
@@ -495,7 +508,7 @@ class ObrewClient {
           {
             onData: (res: string) => this.onStreamResult({ result: res }),
             onFinish: async () => {
-              console.log('[Chat] stream finished!')
+              console.log('[obrew-client] stream finished!')
               return
             },
             onEvent: async str => {
@@ -504,7 +517,7 @@ class ObrewClient {
               if (str) setEventState(displayEventStr)
             },
             onComment: async str => {
-              console.log('[Chat] onComment', str)
+              console.log('[obrew-client] onComment', str)
               return
             },
           },
@@ -523,7 +536,7 @@ class ObrewClient {
       return
     } catch (err) {
       setIsLoading(false)
-      console.log(`[client] ${err}`)
+      console.log(`[obrew-client] ${err}`)
       // toast.error(`Prompt request error: \n ${err}`)
     }
   }
@@ -533,6 +546,61 @@ class ObrewClient {
   stopChat() {
     this.abortController?.abort()
     this.connection?.api?.textInference.stop()
+  }
+
+  /**
+   * Install/download a model from a repository
+   * @param repoId - The repository ID of the model to install (e.g., "TheBloke/Mistral-7B-Instruct-v0.2-GGUF")
+   * @param filename - Optional specific filename to download from the repository
+   * @returns The download result message or null on failure
+   */
+  async installModel(
+    repoId: string,
+    filename?: string
+  ): Promise<string | null> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const body: { repoId: string; filename?: string } = { repoId }
+      if (filename) {
+        body.filename = filename
+      }
+
+      const response = await this.connection?.api?.textInference.download({
+        body,
+      })
+      return response?.data || null
+    } catch (error) {
+      console.error('[obrew-client] Failed to install model:', error)
+      return null
+    }
+  }
+
+  /**
+   * Uninstall/delete a model from local storage
+   * @param repoId - The repository ID of the model to delete
+   * @param filename - The filename of the model to delete
+   * @returns True if deletion was successful, false otherwise
+   */
+  async uninstallModel(repoId: string, filename: string): Promise<boolean> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      await this.connection?.api?.textInference.delete({
+        body: {
+          repoId,
+          filename,
+        },
+      })
+      return true
+    } catch (error) {
+      console.error('[obrew-client] Failed to uninstall model:', error)
+      return false
+    }
   }
 
   /**
@@ -561,7 +629,24 @@ class ObrewClient {
       })
       return true
     } catch (error) {
-      console.error('Failed to load model:', error)
+      console.error('[obrew-client] Failed to load model:', error)
+      return false
+    }
+  }
+
+  /**
+   * Unload the currently loaded text model
+   */
+  async unloadModel(): Promise<boolean> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      await this.connection?.api?.textInference.unload()
+      return true
+    } catch (error) {
+      console.error('[obrew-client] Failed to unload model:', error)
       return false
     }
   }
@@ -578,7 +663,7 @@ class ObrewClient {
       const response = await this.connection?.api?.textInference.model()
       return response?.data || null
     } catch (error) {
-      console.error('Failed to get loaded model:', error)
+      console.error('[obrew-client] Failed to get loaded model:', error)
       return null
     }
   }
@@ -595,7 +680,87 @@ class ObrewClient {
       const response = await this.connection?.api?.textInference.installed()
       return response?.data || []
     } catch (error) {
-      console.error('Failed to get installed models:', error)
+      console.error('[obrew-client] Failed to get installed models:', error)
+      return []
+    }
+  }
+
+  /**
+   * Save agent/bot configuration settings
+   * @param config - The agent configuration settings to save
+   * @returns Array of saved agent configurations or empty array on failure
+   */
+  async saveAgentConfig(config: I_Text_Settings): Promise<I_Text_Settings[]> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.appData.saveBotSettings({
+        body: config,
+      })
+      return response?.data || []
+    } catch (error) {
+      console.error('[obrew-client] Failed to save agent config:', error)
+      return []
+    }
+  }
+
+  /**
+   * Load agent/bot configuration settings
+   * @param botName - Optional bot name to filter configurations
+   * @returns Array of agent configurations or empty array on failure
+   */
+  async loadAgentConfig(botName?: string): Promise<I_Text_Settings[]> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.appData.getBotSettings({
+        ...(botName && { queryParams: { botName } }),
+      })
+      return response?.data || []
+    } catch (error) {
+      console.error('[obrew-client] Failed to load agent config:', error)
+      return []
+    }
+  }
+
+  /**
+   * Delete agent/bot configuration settings
+   * @param botName - The bot name to delete
+   * @returns Array of remaining agent configurations or empty array on failure
+   */
+  async deleteAgentConfig(botName: string): Promise<I_Text_Settings[]> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.appData.deleteBotSettings({
+        queryParams: { botName },
+      })
+      return response?.data || []
+    } catch (error) {
+      console.error('[obrew-client] Failed to delete agent config:', error)
+      return []
+    }
+  }
+
+  /**
+   * Get hardware information (GPU details, VRAM, etc.)
+   */
+  async auditHardware(): Promise<I_HardwareInfo[]> {
+    if (!this.isConnected()) {
+      return []
+    }
+
+    try {
+      const response = await this.connection?.api?.textInference.auditHardware()
+      return response?.data || []
+    } catch (error) {
+      console.error('[obrew-client] Failed to audit hardware:', error)
       return []
     }
   }
