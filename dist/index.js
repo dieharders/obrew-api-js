@@ -487,7 +487,8 @@ var ObrewClient = class {
    * Install/download a model from a repository
    * @param repoId - The repository ID of the model to install (e.g., "TheBloke/Mistral-7B-Instruct-v0.2-GGUF")
    * @param filename - Optional specific filename to download from the repository
-   * @returns The download result message or null on failure
+   * @returns The download result message
+   * @throws Error if not connected or download fails
    */
   async installModel(repoId, filename) {
     if (!this.isConnected()) {
@@ -501,17 +502,20 @@ var ObrewClient = class {
       const response = await this.connection?.api?.textInference.download({
         body
       });
-      return response?.data || null;
+      if (!response?.data) {
+        throw new Error("No data returned from model installation");
+      }
+      return response.data;
     } catch (error) {
-      console.error("[obrew-client] Failed to install model:", error);
-      return null;
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      throw new Error(`Failed to install model: ${message}`);
     }
   }
   /**
-   * Uninstall/delete a model from local storage
+   * Uninstall/delete a model from server
    * @param repoId - The repository ID of the model to delete
    * @param filename - The filename of the model to delete
-   * @returns True if deletion was successful, false otherwise
+   * @throws Error if not connected or deletion fails
    */
   async uninstallModel(repoId, filename) {
     if (!this.isConnected()) {
@@ -524,14 +528,16 @@ var ObrewClient = class {
           filename
         }
       });
-      return true;
     } catch (error) {
-      console.error("[obrew-client] Failed to uninstall model:", error);
-      return false;
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      throw new Error(`Failed to uninstall model: ${message}`);
     }
   }
   /**
    * Load a text model
+   * @param modelPath - The file path to the model
+   * @param modelId - The unique identifier for the model
+   * @throws Error if not connected or model loading fails
    */
   async loadModel(modelPath, modelId) {
     if (!this.isConnected()) {
@@ -553,14 +559,14 @@ var ObrewClient = class {
           }
         }
       });
-      return true;
     } catch (error) {
-      console.error("[obrew-client] Failed to load model:", error);
-      return false;
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      throw new Error(`Failed to load model: ${message}`);
     }
   }
   /**
    * Unload the currently loaded text model
+   * @throws Error if not connected or unloading fails
    */
   async unloadModel() {
     if (!this.isConnected()) {
@@ -568,46 +574,50 @@ var ObrewClient = class {
     }
     try {
       await this.connection?.api?.textInference.unload();
-      return true;
     } catch (error) {
-      console.error("[obrew-client] Failed to unload model:", error);
-      return false;
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      throw new Error(`Failed to unload model: ${message}`);
     }
   }
   /**
    * Get currently loaded model info
+   * @returns The loaded model data, or null if no model is loaded
+   * @throws Error if not connected or request fails
    */
   async getLoadedModel() {
     if (!this.isConnected()) {
-      return null;
+      throw new Error("Not connected to Obrew service");
     }
     try {
       const response = await this.connection?.api?.textInference.model();
       return response?.data || null;
     } catch (error) {
-      console.error("[obrew-client] Failed to get loaded model:", error);
-      return null;
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      throw new Error(`Failed to get loaded model: ${message}`);
     }
   }
   /**
    * Get list of installed models
+   * @returns Array of installed models (empty array if none installed)
+   * @throws Error if not connected or request fails
    */
   async getInstalledModels() {
     if (!this.isConnected()) {
-      return [];
+      throw new Error("Not connected to Obrew service");
     }
     try {
       const response = await this.connection?.api?.textInference.installed();
       return response?.data || [];
     } catch (error) {
-      console.error("[obrew-client] Failed to get installed models:", error);
-      return [];
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      throw new Error(`Failed to get installed models: ${message}`);
     }
   }
   /**
    * Save agent/bot configuration settings
    * @param config - The agent configuration settings to save
-   * @returns Array of saved agent configurations or empty array on failure
+   * @returns Array of all saved agent configurations
+   * @throws Error if not connected or save fails
    */
   async saveAgentConfig(config) {
     if (!this.isConnected()) {
@@ -619,14 +629,15 @@ var ObrewClient = class {
       });
       return response?.data || [];
     } catch (error) {
-      console.error("[obrew-client] Failed to save agent config:", error);
-      return [];
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      throw new Error(`Failed to save agent config: ${message}`);
     }
   }
   /**
    * Load agent/bot configuration settings
    * @param botName - Optional bot name to filter configurations
-   * @returns Array of agent configurations or empty array on failure
+   * @returns Array of agent configurations (empty array if none found)
+   * @throws Error if not connected or load fails
    */
   async loadAgentConfig(botName) {
     if (!this.isConnected()) {
@@ -638,14 +649,15 @@ var ObrewClient = class {
       });
       return response?.data || [];
     } catch (error) {
-      console.error("[obrew-client] Failed to load agent config:", error);
-      return [];
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      throw new Error(`Failed to load agent config: ${message}`);
     }
   }
   /**
    * Delete agent/bot configuration settings
    * @param botName - The bot name to delete
-   * @returns Array of remaining agent configurations or empty array on failure
+   * @returns Array of remaining agent configurations
+   * @throws Error if not connected or deletion fails
    */
   async deleteAgentConfig(botName) {
     if (!this.isConnected()) {
@@ -657,23 +669,25 @@ var ObrewClient = class {
       });
       return response?.data || [];
     } catch (error) {
-      console.error("[obrew-client] Failed to delete agent config:", error);
-      return [];
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      throw new Error(`Failed to delete agent config: ${message}`);
     }
   }
   /**
    * Get hardware information (GPU details, VRAM, etc.)
+   * @returns Array of hardware information (empty array if no hardware found)
+   * @throws Error if not connected or audit fails
    */
   async auditHardware() {
     if (!this.isConnected()) {
-      return [];
+      throw new Error("Not connected to Obrew service");
     }
     try {
       const response = await this.connection?.api?.textInference.auditHardware();
       return response?.data || [];
     } catch (error) {
-      console.error("[obrew-client] Failed to audit hardware:", error);
-      return [];
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      throw new Error(`Failed to audit hardware: ${message}`);
     }
   }
 };
