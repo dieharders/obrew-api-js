@@ -175,8 +175,9 @@ var ObrewClient = class {
       const serviceApis = createServices(config, apiConfig);
       if (serviceApis) {
         this.hasConnected = true;
-        console.log("[obrew] Successfully connected to Obrew API");
-        this.connection = { config, api: serviceApis };
+        const enabledConfig = { ...config, enabled: true };
+        this.connection = { config: enabledConfig, api: serviceApis };
+        console.log("[obrew] Successfully connected to Obrew API\n", config);
         return true;
       }
       return false;

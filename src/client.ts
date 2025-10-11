@@ -73,15 +73,16 @@ class ObrewClient {
       const apiConfig = await fetchAPIConfig(config)
       if (!apiConfig) throw new Error('No api returned.')
       const serviceApis = createServices(config, apiConfig)
-
+      // Success
       if (serviceApis) {
         this.hasConnected = true
-        console.log('[obrew] Successfully connected to Obrew API')
         // Store config in connection after successful connect
-        this.connection = { config, api: serviceApis }
+        const enabledConfig = { ...config, enabled: true }
+        this.connection = { config: enabledConfig, api: serviceApis }
+        console.log('[obrew] Successfully connected to Obrew API\n', config)
         return true
       }
-
+      // Failed
       return false
     } catch (error) {
       console.error('[obrew] Failed to connect to Obrew:', error)
