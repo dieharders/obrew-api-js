@@ -5,6 +5,7 @@ import {
   Message,
   I_InferenceGenerateOptions,
   I_Message,
+  I_HardwareInfo,
 } from './types'
 import {
   DEFAULT_OBREW_CONNECTION,
@@ -59,7 +60,7 @@ class ObrewClient {
     signal?: AbortSignal
   }): Promise<boolean> {
     if (this.hasConnected) {
-      console.log('[obrew] Connection is already active!')
+      console.log('[obrew-client] Connection is already active!')
       return false
     }
     try {
@@ -79,13 +80,16 @@ class ObrewClient {
         // Store config in connection after successful connect
         const enabledConfig = { ...config, enabled: true }
         this.connection = { config: enabledConfig, api: serviceApis }
-        console.log('[obrew] Successfully connected to Obrew API\n', config)
+        console.log(
+          '[obrew-client] Successfully connected to Obrew API\n',
+          config
+        )
         return true
       }
       // Failed
       return false
     } catch (error) {
-      console.error('[obrew] Failed to connect to Obrew:', error)
+      console.error('[obrew-client] Failed to connect to Obrew:', error)
       this.hasConnected = false
       return false
     }
@@ -274,7 +278,7 @@ class ObrewClient {
           }
         }
       } catch (err) {
-        console.log('[UI] Error reading stream data buffer:', err)
+        console.log('[obrew-client] Error reading stream data buffer:', err)
       }
 
       readingBuffer = await reader.read()
@@ -372,7 +376,7 @@ class ObrewClient {
         signal: signal, // controller.current.signal,
       })
     } catch (error) {
-      console.log(`[client] Prompt completion error: ${error}`)
+      console.log(`[obrew-client] Prompt completion error: ${error}`)
       // toast.error(`Prompt completion error: ${error}`);
       return
     }
@@ -385,7 +389,7 @@ class ObrewClient {
     result: any
     setResponseText?: onChatResponseCallback
   }) {
-    console.log('[client] non-stream finished!')
+    console.log('[obrew-client] non-stream finished!')
     if (result?.text) setResponseText?.(result?.text)
   }
 
@@ -410,7 +414,12 @@ class ObrewClient {
         })
       return
     } catch (err) {
-      console.log('[client] onStreamResult err:', typeof result, ' | ', err)
+      console.log(
+        '[obrew-client] onStreamResult err:',
+        typeof result,
+        ' | ',
+        err
+      )
       return
     }
   }
@@ -426,7 +435,7 @@ class ObrewClient {
       default:
         break
     }
-    console.log(`[client] onStreamEvent ${eventName}`)
+    console.log(`[obrew-client] onStreamEvent ${eventName}`)
   }
 
   async append(
@@ -467,7 +476,10 @@ class ObrewClient {
       // abortRef.current = false
 
       // Send request completion for prompt
-      console.log('[Chat] Sending request to inference server...', newUserMsg)
+      console.log(
+        '[obrew-client] Sending request to inference server...',
+        newUserMsg
+      )
       // const mode =
       //   settings?.attention?.response_mode || DEFAULT_CONVERSATION_MODE
       // const options: I_InferenceGenerateOptions = {
@@ -485,7 +497,7 @@ class ObrewClient {
 
       // @TODO Call a specific agent by name
       const response = {} as Response // await this.getCompletion(options)
-      // console.log('[Chat] Prompt response', response)
+      // console.log('[obrew-client] Prompt response', response)
 
       // Check success if streamed
       if (response?.body?.getReader) {
@@ -495,7 +507,7 @@ class ObrewClient {
           {
             onData: (res: string) => this.onStreamResult({ result: res }),
             onFinish: async () => {
-              console.log('[Chat] stream finished!')
+              console.log('[obrew-client] stream finished!')
               return
             },
             onEvent: async str => {
@@ -504,7 +516,7 @@ class ObrewClient {
               if (str) setEventState(displayEventStr)
             },
             onComment: async str => {
-              console.log('[Chat] onComment', str)
+              console.log('[obrew-client] onComment', str)
               return
             },
           },
@@ -523,7 +535,7 @@ class ObrewClient {
       return
     } catch (err) {
       setIsLoading(false)
-      console.log(`[client] ${err}`)
+      console.log(`[obrew-client] ${err}`)
       // toast.error(`Prompt request error: \n ${err}`)
     }
   }
@@ -561,7 +573,7 @@ class ObrewClient {
       })
       return true
     } catch (error) {
-      console.error('Failed to load model:', error)
+      console.error('[obrew-client] Failed to load model:', error)
       return false
     }
   }
@@ -578,7 +590,7 @@ class ObrewClient {
       const response = await this.connection?.api?.textInference.model()
       return response?.data || null
     } catch (error) {
-      console.error('Failed to get loaded model:', error)
+      console.error('[obrew-client] Failed to get loaded model:', error)
       return null
     }
   }
@@ -595,7 +607,24 @@ class ObrewClient {
       const response = await this.connection?.api?.textInference.installed()
       return response?.data || []
     } catch (error) {
-      console.error('Failed to get installed models:', error)
+      console.error('[obrew-client] Failed to get installed models:', error)
+      return []
+    }
+  }
+
+  /**
+   * Get hardware information (GPU details, VRAM, etc.)
+   */
+  async auditHardware(): Promise<I_HardwareInfo[]> {
+    if (!this.isConnected()) {
+      return []
+    }
+
+    try {
+      const response = await this.connection?.api?.textInference.auditHardware()
+      return response?.data || []
+    } catch (error) {
+      console.error('[obrew-client] Failed to audit hardware:', error)
       return []
     }
   }
