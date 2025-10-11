@@ -83,8 +83,19 @@ var createServices = (config, response) => {
           });
           if (!res)
             throw new Error(`No response for endpoint ${endpoint.name}.`);
-          if (!res?.ok)
-            throw new Error(`Something went wrong. ${res?.statusText}`);
+          if (!res?.ok) {
+            let errorDetail = res?.statusText;
+            try {
+              const errorBody = await res.json();
+              if (errorBody?.detail) {
+                errorDetail = typeof errorBody.detail === "string" ? errorBody.detail : JSON.stringify(errorBody.detail);
+              } else if (errorBody?.message) {
+                errorDetail = errorBody.message;
+              }
+            } catch {
+            }
+            throw new Error(`Something went wrong. ${errorDetail}`);
+          }
           const responseType = res.headers.get("content-type");
           if (res.json && !responseType?.includes("event-stream")) {
             const result = await res.json();
@@ -493,7 +504,7 @@ var ObrewClient = class {
       throw new Error("Not connected to Obrew service");
     }
     try {
-      const body = { repoId };
+      const body = { repo_id: repoId };
       if (filename) {
         body.filename = filename;
       }
