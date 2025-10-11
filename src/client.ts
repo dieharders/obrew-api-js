@@ -6,6 +6,7 @@ import {
   I_InferenceGenerateOptions,
   I_Message,
   I_HardwareInfo,
+  I_Text_Settings,
 } from './types'
 import {
   DEFAULT_OBREW_CONNECTION,
@@ -578,6 +579,31 @@ class ObrewClient {
   }
 
   /**
+   * Uninstall/delete a model from local storage
+   * @param repoId - The repository ID of the model to delete
+   * @param filename - The filename of the model to delete
+   * @returns True if deletion was successful, false otherwise
+   */
+  async uninstallModel(repoId: string, filename: string): Promise<boolean> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      await this.connection?.api?.textInference.delete({
+        body: {
+          repoId,
+          filename,
+        },
+      })
+      return true
+    } catch (error) {
+      console.error('[obrew-client] Failed to uninstall model:', error)
+      return false
+    }
+  }
+
+  /**
    * Load a text model
    */
   async loadModel(modelPath: string, modelId: string): Promise<boolean> {
@@ -604,6 +630,23 @@ class ObrewClient {
       return true
     } catch (error) {
       console.error('[obrew-client] Failed to load model:', error)
+      return false
+    }
+  }
+
+  /**
+   * Unload the currently loaded text model
+   */
+  async unloadModel(): Promise<boolean> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      await this.connection?.api?.textInference.unload()
+      return true
+    } catch (error) {
+      console.error('[obrew-client] Failed to unload model:', error)
       return false
     }
   }
@@ -638,6 +681,69 @@ class ObrewClient {
       return response?.data || []
     } catch (error) {
       console.error('[obrew-client] Failed to get installed models:', error)
+      return []
+    }
+  }
+
+  /**
+   * Save agent/bot configuration settings
+   * @param config - The agent configuration settings to save
+   * @returns Array of saved agent configurations or empty array on failure
+   */
+  async saveAgentConfig(config: I_Text_Settings): Promise<I_Text_Settings[]> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.appData.saveBotSettings({
+        body: config,
+      })
+      return response?.data || []
+    } catch (error) {
+      console.error('[obrew-client] Failed to save agent config:', error)
+      return []
+    }
+  }
+
+  /**
+   * Load agent/bot configuration settings
+   * @param botName - Optional bot name to filter configurations
+   * @returns Array of agent configurations or empty array on failure
+   */
+  async loadAgentConfig(botName?: string): Promise<I_Text_Settings[]> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.appData.getBotSettings({
+        ...(botName && { queryParams: { botName } }),
+      })
+      return response?.data || []
+    } catch (error) {
+      console.error('[obrew-client] Failed to load agent config:', error)
+      return []
+    }
+  }
+
+  /**
+   * Delete agent/bot configuration settings
+   * @param botName - The bot name to delete
+   * @returns Array of remaining agent configurations or empty array on failure
+   */
+  async deleteAgentConfig(botName: string): Promise<I_Text_Settings[]> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.appData.deleteBotSettings({
+        queryParams: { botName },
+      })
+      return response?.data || []
+    } catch (error) {
+      console.error('[obrew-client] Failed to delete agent config:', error)
       return []
     }
   }
