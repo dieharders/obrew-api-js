@@ -561,7 +561,8 @@ class ObrewClient {
     }
 
     try {
-      const body: { repoId: string; filename?: string } = { repoId }
+      // Note: Server expects snake_case parameters
+      const body: { repo_id: string; filename?: string } = { repo_id: repoId }
       if (filename) {
         body.filename = filename
       }

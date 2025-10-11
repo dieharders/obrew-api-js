@@ -109,8 +109,24 @@ export const createServices = (
             throw new Error(`No response for endpoint ${endpoint.name}.`)
 
           // Check bad request
-          if (!res?.ok)
-            throw new Error(`Something went wrong. ${res?.statusText}`)
+          if (!res?.ok) {
+            // Try to get error details from response body
+            let errorDetail = res?.statusText
+            try {
+              const errorBody = await res.json()
+              if (errorBody?.detail) {
+                errorDetail =
+                  typeof errorBody.detail === 'string'
+                    ? errorBody.detail
+                    : JSON.stringify(errorBody.detail)
+              } else if (errorBody?.message) {
+                errorDetail = errorBody.message
+              }
+            } catch {
+              // If JSON parsing fails, keep statusText
+            }
+            throw new Error(`Something went wrong. ${errorDetail}`)
+          }
 
           // Check json response
           const responseType = res.headers.get('content-type')
