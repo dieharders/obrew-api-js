@@ -463,14 +463,9 @@ declare class ObrewClient {
     }>;
     cancelRequest(): void;
     disconnect(): void;
-    private handleStreamingResponse;
     private extractTextFromResponse;
-    private processSseStream;
+    private handleStreamResponse;
     sendMessage(messages: Message[], options?: Partial<I_InferenceGenerateOptions>): Promise<string>;
-    getCompletion({ options, signal, }: {
-        options: I_InferenceGenerateOptions;
-        signal: AbortSignal;
-    }): Promise<string | I_NonStreamChatbotResponse | I_NonStreamPlayground | I_GenericAPIResponse<any> | Response | null | undefined>;
     onNonStreamResult({ result, setResponseText, }: {
         result: any;
         setResponseText?: onChatResponseCallback;
