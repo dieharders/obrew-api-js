@@ -659,7 +659,9 @@ var ObrewClient = class {
       const response = await this.connection?.api?.storage?.getBotSettings({
         ...botName && { queryParams: { botName } }
       });
-      return response?.data || [];
+      const config = response?.data?.find((c) => c.model.botName === botName);
+      if (!config) throw new Error("No config found.");
+      return config;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error occurred";
       throw new Error(`Failed to load agent config: ${message}`);

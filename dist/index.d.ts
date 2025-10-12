@@ -489,7 +489,7 @@ declare class ObrewClient {
     getLoadedModel(): Promise<I_LoadedModelRes | null>;
     getInstalledModels(): Promise<T_InstalledTextModel[]>;
     saveAgentConfig(config: I_Text_Settings): Promise<I_Text_Settings[]>;
-    loadAgentConfig(botName?: string): Promise<I_Text_Settings[]>;
+    loadAgentConfig(botName?: string): Promise<I_Text_Settings>;
     deleteAgentConfig(botName: string): Promise<I_Text_Settings[]>;
     auditHardware(): Promise<I_HardwareInfo[]>;
 }
