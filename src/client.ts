@@ -719,7 +719,7 @@ class ObrewClient {
     }
 
     try {
-      const response = await this.connection?.api?.appData.saveBotSettings({
+      const response = await this.connection?.api?.storage?.saveBotSettings({
         body: config,
       })
       return response?.data || []
@@ -742,7 +742,7 @@ class ObrewClient {
     }
 
     try {
-      const response = await this.connection?.api?.appData.getBotSettings({
+      const response = await this.connection?.api?.storage?.getBotSettings({
         ...(botName && { queryParams: { botName } }),
       })
       return response?.data || []
@@ -765,7 +765,7 @@ class ObrewClient {
     }
 
     try {
-      const response = await this.connection?.api?.appData.deleteBotSettings({
+      const response = await this.connection?.api?.storage?.deleteBotSettings({
         queryParams: { botName },
       })
       return response?.data || []

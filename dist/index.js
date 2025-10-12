@@ -638,7 +638,7 @@ var ObrewClient = class {
       throw new Error("Not connected to Obrew service");
     }
     try {
-      const response = await this.connection?.api?.appData.saveBotSettings({
+      const response = await this.connection?.api?.storage?.saveBotSettings({
         body: config
       });
       return response?.data || [];
@@ -658,7 +658,7 @@ var ObrewClient = class {
       throw new Error("Not connected to Obrew service");
     }
     try {
-      const response = await this.connection?.api?.appData.getBotSettings({
+      const response = await this.connection?.api?.storage?.getBotSettings({
         ...botName && { queryParams: { botName } }
       });
       return response?.data || [];
@@ -678,7 +678,7 @@ var ObrewClient = class {
       throw new Error("Not connected to Obrew service");
     }
     try {
-      const response = await this.connection?.api?.appData.deleteBotSettings({
+      const response = await this.connection?.api?.storage?.deleteBotSettings({
         queryParams: { botName }
       });
       return response?.data || [];
