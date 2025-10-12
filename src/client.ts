@@ -707,7 +707,9 @@ class ObrewClient {
 
     try {
       const response = await this.connection?.api?.textInference.installed()
-      return response?.data || []
+      const result = response?.data
+      if (!result || result.length <= 0) throw new Error('No results.')
+      return result
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Unknown error occurred'

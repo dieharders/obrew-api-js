@@ -626,7 +626,9 @@ var ObrewClient = class {
     }
     try {
       const response = await this.connection?.api?.textInference.installed();
-      return response?.data || [];
+      const result = response?.data;
+      if (!result || result.length <= 0) throw new Error("No results.");
+      return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error occurred";
       throw new Error(`Failed to get installed models: ${message}`);
