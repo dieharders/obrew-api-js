@@ -747,7 +747,7 @@ class ObrewClient {
    * @returns Array of agent configurations (empty array if none found)
    * @throws Error if not connected or load fails
    */
-  async loadAgentConfig(botName?: string): Promise<I_Text_Settings> {
+  async loadAgentConfig(botName?: string): Promise<I_Text_Settings | null> {
     if (!this.isConnected()) {
       throw new Error('Not connected to Obrew service')
     }
@@ -757,8 +757,7 @@ class ObrewClient {
         ...(botName && { queryParams: { botName } }),
       })
       const config = response?.data?.find(c => c.model.botName === botName)
-      if (!config) throw new Error('No config found.')
-      return config
+      return config || null
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Unknown error occurred'
