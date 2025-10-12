@@ -563,7 +563,7 @@ var ObrewClient = class {
       throw new Error("Not connected to Obrew service");
     }
     try {
-      await this.connection?.api?.textInference.load({
+      const results = await this.connection?.api?.textInference.load({
         body: {
           modelPath,
           modelId,
@@ -578,6 +578,7 @@ var ObrewClient = class {
           }
         }
       });
+      if (!results) throw new Error("No results for loaded model.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error occurred";
       throw new Error(`Failed to load model: ${message}`);
