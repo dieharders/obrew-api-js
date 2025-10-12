@@ -551,6 +551,13 @@ var ObrewClient = class {
    * Load a text model
    * @param modelPath - The file path to the model
    * @param modelId - The unique identifier for the model
+   * raw_input: Optional[bool] = False  # user can send manually formatted messages
+     responseMode: Optional[str] = DEFAULT_CHAT_MODE
+     toolUseMode: Optional[str] = DEFAULT_TOOL_USE_MODE
+     toolSchemaType: Optional[str] = DEFAULT_TOOL_SCHEMA_TYPE
+     init: LoadTextInferenceInit
+     call: LoadTextInferenceCall
+     messages: Optional[List[ChatMessage]] = None
    * @throws Error if not connected or model loading fails
    */
   async loadModel(modelPath, modelId) {

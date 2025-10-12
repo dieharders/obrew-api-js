@@ -7,6 +7,7 @@ import {
   I_Message,
   I_HardwareInfo,
   I_Text_Settings,
+  T_InstalledTextModel,
 } from './types'
 import {
   DEFAULT_OBREW_CONNECTION,
@@ -619,6 +620,13 @@ class ObrewClient {
    * Load a text model
    * @param modelPath - The file path to the model
    * @param modelId - The unique identifier for the model
+   * raw_input: Optional[bool] = False  # user can send manually formatted messages
+     responseMode: Optional[str] = DEFAULT_CHAT_MODE
+     toolUseMode: Optional[str] = DEFAULT_TOOL_USE_MODE
+     toolSchemaType: Optional[str] = DEFAULT_TOOL_SCHEMA_TYPE
+     init: LoadTextInferenceInit
+     call: LoadTextInferenceCall
+     messages: Optional[List[ChatMessage]] = None
    * @throws Error if not connected or model loading fails
    */
   async loadModel(modelPath: string, modelId: string): Promise<void> {
@@ -692,7 +700,7 @@ class ObrewClient {
    * @returns Array of installed models (empty array if none installed)
    * @throws Error if not connected or request fails
    */
-  async getInstalledModels() {
+  async getInstalledModels(): Promise<T_InstalledTextModel[]> {
     if (!this.isConnected()) {
       throw new Error('Not connected to Obrew service')
     }
