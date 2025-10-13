@@ -18,6 +18,8 @@ import {
 
 type onChatResponseCallback = (text: string | ((t: string) => void)) => void
 
+const LOG_PREFIX = '[obrew-client]'
+
 /**
  * ObrewClient responsibilities:
  * 1. Handle connections and server config (track host/port in mem)
@@ -62,7 +64,7 @@ class ObrewClient {
     signal?: AbortSignal
   }): Promise<boolean> {
     if (this.hasConnected) {
-      console.log('[obrew-client] Connection is already active!')
+      console.log(`${LOG_PREFIX} Connection is already active!`)
       return false
     }
     try {
@@ -83,15 +85,14 @@ class ObrewClient {
         const enabledConfig = { ...config, enabled: true }
         this.connection = { config: enabledConfig, api: serviceApis }
         console.log(
-          '[obrew-client] Successfully connected to Obrew API\n',
-          config
+          `${LOG_PREFIX} Successfully connected to Obrew API\n${config}`
         )
         return true
       }
       // Failed
       return false
     } catch (error) {
-      console.error('[obrew-client] Failed to connect to Obrew:', error)
+      console.error(`${LOG_PREFIX} Failed to connect to Obrew: ${error}`)
       this.hasConnected = false
       return false
     }
@@ -155,48 +156,8 @@ class ObrewClient {
   // Core Helper Methods //
 
   /**
-   * Handle streaming response from AI
-   */
-  private async handleStreamingResponse(response: Response): Promise<string> {
-    const reader = response.body?.getReader()
-    if (!reader) {
-      throw new Error('No reader available for streaming response')
-    }
-
-    const decoder = new TextDecoder()
-    let fullText = ''
-
-    try {
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        const chunk = decoder.decode(value, { stream: true })
-        // Process SSE format
-        const lines = chunk.split('\n')
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6)
-            if (data === '[DONE]') break
-            try {
-              const parsed = JSON.parse(data)
-              fullText += this.extractTextFromResponse(parsed)
-            } catch (e) {
-              // Skip invalid JSON
-            }
-          }
-        }
-      }
-    } finally {
-      reader.releaseLock()
-    }
-
-    return fullText
-  }
-
-  /**
    * Extract text from various response formats
+   * Handles multiple response types from different API endpoints
    */
   private extractTextFromResponse(response: any): string {
     // Handle NonStreamPlayground format
@@ -226,71 +187,122 @@ class ObrewClient {
   }
 
   /**
-   * Handle server sent event stream for AI chats
-   * // https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_streams
-   * @TODO See if this is needed or can be merged with above?
+   * Unified streaming response handler for SSE (Server-Sent Events)
+   * Supports both simple text accumulation and advanced callback-based streaming
+   * https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_streams
+   * @param response - The Response object containing the stream
+   * @param options - Configuration options for handling the stream
+   * @param abortRef - Optional external AbortController to cancel the stream (separate from class's abortController)
    */
-  private async processSseStream(
-    fetchStream: Response,
-    {
-      onData,
-      onFinish,
-      onEvent,
-      onComment,
-    }: {
-      onData: (str: string) => Promise<void>
-      onFinish: () => Promise<void>
-      onEvent?: (str: string) => Promise<void>
-      onComment?: (str: string) => Promise<void>
+  private async handleStreamResponse(
+    response: Response,
+    options?: {
+      onData?: (str: string) => void | Promise<void>
+      onFinish?: () => void | Promise<void>
+      onEvent?: (str: string) => void | Promise<void>
+      onComment?: (str: string) => void | Promise<void>
+      extractText?: boolean // If true, accumulate and return text
     },
-    abortRef: AbortController | null = null
-  ) {
-    const reader = fetchStream.body?.getReader()
-
+    abortRef?: AbortController | null
+  ): Promise<string> {
+    const reader = response.body?.getReader()
     if (!reader) {
-      return // If reader is not available
+      throw new Error('No reader available for streaming response')
     }
 
     const decoder = new TextDecoder('utf-8')
+    let fullText = ''
+    const extractText = options?.extractText ?? true
 
-    let readingBuffer = await reader.read()
-    while (!readingBuffer.done && !abortRef) {
-      try {
-        const result =
-          typeof readingBuffer.value === 'string'
-            ? readingBuffer.value
-            : decoder.decode(readingBuffer.value, { stream: true })
+    try {
+      let readingBuffer = await reader.read()
 
-        const lines = result.split('\n')
+      // Check both external abortRef (if provided) and internal abortController
+      while (!readingBuffer.done && !abortRef?.signal.aborted) {
+        try {
+          const chunk =
+            typeof readingBuffer.value === 'string'
+              ? readingBuffer.value
+              : decoder.decode(readingBuffer.value, { stream: true })
 
-        for (const line of lines) {
-          if (line?.startsWith(SSE_COMMENT_PREFIX)) {
-            const comment = line.slice(SSE_COMMENT_PREFIX.length).trim()
-            await onComment?.(comment)
+          const lines = chunk.split('\n')
+
+          for (const line of lines) {
+            // Handle SSE comments
+            if (line?.startsWith(SSE_COMMENT_PREFIX)) {
+              const comment = line.slice(SSE_COMMENT_PREFIX.length).trim()
+              await options?.onComment?.(comment)
+            }
+
+            // Handle SSE events
+            if (line?.startsWith(SSE_EVENT_PREFIX)) {
+              const eventName = line.slice(SSE_EVENT_PREFIX.length).trim()
+              await options?.onEvent?.(eventName)
+            }
+
+            // Handle SSE data
+            if (line?.startsWith(SSE_DATA_PREFIX)) {
+              const eventData = line.slice(SSE_DATA_PREFIX.length).trim()
+
+              // Check for stream completion marker
+              if (eventData === '[DONE]') {
+                break
+              }
+
+              // Call onData callback if provided
+              await options?.onData?.(eventData)
+
+              // Also accumulate text if extractText is enabled
+              if (extractText) {
+                try {
+                  const parsed = JSON.parse(eventData)
+                  fullText += this.extractTextFromResponse(parsed)
+                } catch {
+                  // If not JSON, treat as plain text
+                  fullText += eventData
+                }
+              }
+            }
+
+            // Support legacy "data: " format (without SSE prefix constant)
+            if (
+              !line.startsWith(SSE_DATA_PREFIX) &&
+              line.startsWith('data: ')
+            ) {
+              const data = line.slice(6)
+              if (data === '[DONE]') break
+
+              await options?.onData?.(data)
+
+              if (extractText) {
+                try {
+                  const parsed = JSON.parse(data)
+                  fullText += this.extractTextFromResponse(parsed)
+                } catch {
+                  fullText += data
+                }
+              }
+            }
           }
-
-          if (line?.startsWith(SSE_EVENT_PREFIX)) {
-            const eventName = line.slice(SSE_EVENT_PREFIX.length).trim()
-            await onEvent?.(eventName)
-          }
-
-          if (line?.startsWith(SSE_DATA_PREFIX)) {
-            const eventData = line.slice(SSE_DATA_PREFIX.length).trim()
-            await onData(eventData)
-          }
+        } catch (err) {
+          console.log(`${LOG_PREFIX} Error reading stream data buffer: ${err}`)
         }
-      } catch (err) {
-        console.log('[obrew-client] Error reading stream data buffer:', err)
+
+        readingBuffer = await reader.read()
       }
 
-      readingBuffer = await reader.read()
+      // Cancel if not done (e.g., aborted)
+      if (!readingBuffer.done) {
+        await reader.cancel()
+      }
+    } finally {
+      reader.releaseLock()
     }
 
-    if (!readingBuffer.done) {
-      await reader.cancel()
-    }
+    // Call finish callback
+    await options?.onFinish?.()
 
-    await onFinish()
+    return fullText
   }
 
   // Core API Methods //
@@ -323,8 +335,16 @@ class ObrewClient {
         signal: this.abortController.signal,
       })
 
-      if (!response) {
-        throw new Error('No response from AI service')
+      // Handle possible errors
+      if (!response) throw new Error('No response from AI service')
+      // Check for error responses (only applies to object responses with success property)
+      if (
+        typeof response === 'object' &&
+        response !== null &&
+        'success' in response &&
+        response.success === false
+      ) {
+        throw new Error(`No response from AI service: ${response.message}`)
       }
 
       // Handle different response types
@@ -344,7 +364,7 @@ class ObrewClient {
         const contentType = httpResponse.headers.get('content-type')
         if (contentType?.includes('event-stream')) {
           // Handle streaming response
-          return await this.handleStreamingResponse(httpResponse)
+          return await this.handleStreamResponse(httpResponse)
         } else {
           // Handle JSON response
           const data = await httpResponse.json()
@@ -362,28 +382,10 @@ class ObrewClient {
     }
   }
 
-  // @TODO See if below can be used or merged with sendMessage. This came from obrew studio webui.
-  //
-  async getCompletion({
-    options,
-    signal,
-  }: {
-    options: I_InferenceGenerateOptions
-    signal: AbortSignal
-  }) {
-    // this.abortController = new AbortController();
-    try {
-      return this.connection?.api?.textInference.generate({
-        body: options,
-        signal: signal, // controller.current.signal,
-      })
-    } catch (error) {
-      console.log(`[obrew-client] Prompt completion error: ${error}`)
-      // toast.error(`Prompt completion error: ${error}`);
-      return
-    }
-  }
-
+  /**
+   * Handle non-streaming result
+   * Extracts text using the unified extraction logic
+   */
   onNonStreamResult({
     result,
     setResponseText,
@@ -391,10 +393,15 @@ class ObrewClient {
     result: any
     setResponseText?: onChatResponseCallback
   }) {
-    console.log('[obrew-client] non-stream finished!')
-    if (result?.text) setResponseText?.(result?.text)
+    console.log(`${LOG_PREFIX} non-stream finished!`)
+    const text = this.extractTextFromResponse(result)
+    if (text) setResponseText?.(text)
   }
 
+  /**
+   * Handle streaming result
+   * Extracts text from individual stream chunks
+   */
   async onStreamResult({
     result,
     setResponseText,
@@ -407,7 +414,10 @@ class ObrewClient {
       const parsedResult = result ? JSON.parse(result) : null
       const data = parsedResult?.data
       const eventName = parsedResult?.event
-      const text = data?.text
+
+      // Use unified text extraction
+      const text = this.extractTextFromResponse(data || parsedResult)
+
       if (text)
         setResponseText?.(prevText => {
           // Overwrite prev response if final content is received
@@ -416,12 +426,7 @@ class ObrewClient {
         })
       return
     } catch (err) {
-      console.log(
-        '[obrew-client] onStreamResult err:',
-        typeof result,
-        ' | ',
-        err
-      )
+      console.log(`${LOG_PREFIX} onStreamResult err: ${typeof result} | ${err}`)
       return
     }
   }
@@ -437,7 +442,7 @@ class ObrewClient {
       default:
         break
     }
-    console.log(`[obrew-client] onStreamEvent ${eventName}`)
+    console.log(`${LOG_PREFIX} onStreamEvent ${eventName}`)
   }
 
   async append(
@@ -479,8 +484,7 @@ class ObrewClient {
 
       // Send request completion for prompt
       console.log(
-        '[obrew-client] Sending request to inference server...',
-        newUserMsg
+        `${LOG_PREFIX} Sending request to inference server...${newUserMsg}`
       )
       // const mode =
       //   settings?.attention?.response_mode || DEFAULT_CONVERSATION_MODE
@@ -497,30 +501,31 @@ class ObrewClient {
       //   ...settings?.response,
       // }
 
-      // @TODO Call a specific agent by name
-      const response = {} as Response // await this.getCompletion(options)
-      // console.log('[obrew-client] Prompt response', response)
+      // @TODO Call a specific agent by name using sendMessage()
+      const response = {} as Response // await this.sendMessage(...)
+      // console.log(`${LOG_PREFIX} Prompt response: ${response}`)
 
       // Check success if streamed
       if (response?.body?.getReader) {
         // Process the stream into text tokens
-        await this.processSseStream(
+        await this.handleStreamResponse(
           response,
           {
             onData: (res: string) => this.onStreamResult({ result: res }),
             onFinish: async () => {
-              console.log('[obrew-client] stream finished!')
+              console.log(`${LOG_PREFIX} stream finished!`)
               return
             },
-            onEvent: async str => {
+            onEvent: async (str: string) => {
               this.onStreamEvent(str)
               const displayEventStr = str.replace(/_/g, ' ') + '...'
               if (str) setEventState(displayEventStr)
             },
-            onComment: async str => {
-              console.log('[obrew-client] onComment', str)
+            onComment: async (str: string) => {
+              console.log(`${LOG_PREFIX} onComment:\n${str}`)
               return
             },
+            extractText: false, // Don't accumulate text, use callbacks instead
           },
           this.abortController
         )
@@ -537,7 +542,7 @@ class ObrewClient {
       return
     } catch (err) {
       setIsLoading(false)
-      console.log(`[obrew-client] ${err}`)
+      console.log(`${LOG_PREFIX} ${err}`)
       // toast.error(`Prompt request error: \n ${err}`)
     }
   }
@@ -620,16 +625,17 @@ class ObrewClient {
    * Load a text model
    * @param modelPath - The file path to the model
    * @param modelId - The unique identifier for the model
-   * raw_input: Optional[bool] = False  # user can send manually formatted messages
-     responseMode: Optional[str] = DEFAULT_CHAT_MODE
-     toolUseMode: Optional[str] = DEFAULT_TOOL_USE_MODE
-     toolSchemaType: Optional[str] = DEFAULT_TOOL_SCHEMA_TYPE
-     init: LoadTextInferenceInit
-     call: LoadTextInferenceCall
-     messages: Optional[List[ChatMessage]] = None
    * @throws Error if not connected or model loading fails
    */
-  async loadModel(modelPath: string, modelId: string): Promise<void> {
+  async loadModel({
+    modelPath,
+    modelId,
+    modelSettings,
+  }: {
+    modelPath: string
+    modelId: string
+    modelSettings: I_Text_Settings
+  }): Promise<void> {
     if (!this.isConnected()) {
       throw new Error('Not connected to Obrew service')
     }
@@ -640,14 +646,16 @@ class ObrewClient {
           modelPath,
           modelId,
           init: {
-            n_ctx: 4096,
-            n_threads: 4,
-            n_gpu_layers: -1,
+            ...modelSettings.performance,
           },
           call: {
-            temperature: 0.7,
-            max_tokens: 2048,
+            ...modelSettings.response,
           },
+          raw_input: false, // user can send manually formatted messages
+          responseMode: modelSettings.attention.response_mode,
+          toolUseMode: modelSettings.attention.tool_use_mode,
+          // toolSchemaType: modelSettings.tools.assigned
+          // messages?: [] || null
         },
       })
       if (!results) throw new Error('No results for loaded model.')
@@ -800,7 +808,9 @@ class ObrewClient {
 
     try {
       const response = await this.connection?.api?.textInference.auditHardware()
-      return response?.data || []
+      const results = response?.data || []
+      console.log(`${LOG_PREFIX} Hardware audit result:`, results)
+      return results
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Unknown error occurred'
