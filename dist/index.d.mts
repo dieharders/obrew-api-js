@@ -479,7 +479,11 @@ declare class ObrewClient {
     stopChat(): void;
     installModel(repoId: string, filename?: string): Promise<string>;
     uninstallModel(repoId: string, filename: string): Promise<void>;
-    loadModel(modelPath: string, modelId: string): Promise<void>;
+    loadModel({ modelPath, modelId, modelSettings, }: {
+        modelPath: string;
+        modelId: string;
+        modelSettings: I_Text_Settings;
+    }): Promise<void>;
     unloadModel(): Promise<void>;
     getLoadedModel(): Promise<I_LoadedModelRes | null>;
     getInstalledModels(): Promise<T_InstalledTextModel[]>;

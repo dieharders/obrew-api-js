@@ -625,16 +625,17 @@ class ObrewClient {
    * Load a text model
    * @param modelPath - The file path to the model
    * @param modelId - The unique identifier for the model
-   * raw_input: Optional[bool] = False  # user can send manually formatted messages
-     responseMode: Optional[str] = DEFAULT_CHAT_MODE
-     toolUseMode: Optional[str] = DEFAULT_TOOL_USE_MODE
-     toolSchemaType: Optional[str] = DEFAULT_TOOL_SCHEMA_TYPE
-     init: LoadTextInferenceInit
-     call: LoadTextInferenceCall
-     messages: Optional[List[ChatMessage]] = None
    * @throws Error if not connected or model loading fails
    */
-  async loadModel(modelPath: string, modelId: string): Promise<void> {
+  async loadModel({
+    modelPath,
+    modelId,
+    modelSettings,
+  }: {
+    modelPath: string
+    modelId: string
+    modelSettings: I_Text_Settings
+  }): Promise<void> {
     if (!this.isConnected()) {
       throw new Error('Not connected to Obrew service')
     }
@@ -645,14 +646,16 @@ class ObrewClient {
           modelPath,
           modelId,
           init: {
-            n_ctx: 4096,
-            n_threads: 4,
-            n_gpu_layers: -1,
+            ...modelSettings.performance,
           },
           call: {
-            temperature: 0.7,
-            max_tokens: 2048,
+            ...modelSettings.response,
           },
+          raw_input: false, // user can send manually formatted messages
+          responseMode: modelSettings.attention.response_mode,
+          toolUseMode: modelSettings.attention.tool_use_mode,
+          // toolSchemaType: modelSettings.tools.assigned
+          // messages?: [] || null
         },
       })
       if (!results) throw new Error('No results for loaded model.')
