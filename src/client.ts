@@ -18,6 +18,8 @@ import {
 
 type onChatResponseCallback = (text: string | ((t: string) => void)) => void
 
+const LOG_PREFIX = '[obrew-client]'
+
 /**
  * ObrewClient responsibilities:
  * 1. Handle connections and server config (track host/port in mem)
@@ -62,7 +64,7 @@ class ObrewClient {
     signal?: AbortSignal
   }): Promise<boolean> {
     if (this.hasConnected) {
-      console.log('[obrew-client] Connection is already active!')
+      console.log(`${LOG_PREFIX} Connection is already active!`)
       return false
     }
     try {
@@ -83,15 +85,14 @@ class ObrewClient {
         const enabledConfig = { ...config, enabled: true }
         this.connection = { config: enabledConfig, api: serviceApis }
         console.log(
-          '[obrew-client] Successfully connected to Obrew API\n',
-          config
+          `${LOG_PREFIX} Successfully connected to Obrew API\n${config}`
         )
         return true
       }
       // Failed
       return false
     } catch (error) {
-      console.error('[obrew-client] Failed to connect to Obrew:', error)
+      console.error(`${LOG_PREFIX} Failed to connect to Obrew: ${error}`)
       this.hasConnected = false
       return false
     }
@@ -284,7 +285,7 @@ class ObrewClient {
             }
           }
         } catch (err) {
-          console.log('[obrew-client] Error reading stream data buffer:', err)
+          console.log(`${LOG_PREFIX} Error reading stream data buffer: ${err}`)
         }
 
         readingBuffer = await reader.read()
@@ -384,7 +385,7 @@ class ObrewClient {
     result: any
     setResponseText?: onChatResponseCallback
   }) {
-    console.log('[obrew-client] non-stream finished!')
+    console.log(`${LOG_PREFIX} non-stream finished!`)
     const text = this.extractTextFromResponse(result)
     if (text) setResponseText?.(text)
   }
@@ -417,12 +418,7 @@ class ObrewClient {
         })
       return
     } catch (err) {
-      console.log(
-        '[obrew-client] onStreamResult err:',
-        typeof result,
-        ' | ',
-        err
-      )
+      console.log(`${LOG_PREFIX} onStreamResult err: ${typeof result} | ${err}`)
       return
     }
   }
@@ -438,7 +434,7 @@ class ObrewClient {
       default:
         break
     }
-    console.log(`[obrew-client] onStreamEvent ${eventName}`)
+    console.log(`${LOG_PREFIX} onStreamEvent ${eventName}`)
   }
 
   async append(
@@ -480,8 +476,7 @@ class ObrewClient {
 
       // Send request completion for prompt
       console.log(
-        '[obrew-client] Sending request to inference server...',
-        newUserMsg
+        `${LOG_PREFIX} Sending request to inference server...${newUserMsg}`
       )
       // const mode =
       //   settings?.attention?.response_mode || DEFAULT_CONVERSATION_MODE
@@ -500,7 +495,7 @@ class ObrewClient {
 
       // @TODO Call a specific agent by name using sendMessage()
       const response = {} as Response // await this.sendMessage(...)
-      // console.log('[obrew-client] Prompt response', response)
+      // console.log(`${LOG_PREFIX} Prompt response: ${response}`)
 
       // Check success if streamed
       if (response?.body?.getReader) {
@@ -510,7 +505,7 @@ class ObrewClient {
           {
             onData: (res: string) => this.onStreamResult({ result: res }),
             onFinish: async () => {
-              console.log('[obrew-client] stream finished!')
+              console.log(`${LOG_PREFIX} stream finished!`)
               return
             },
             onEvent: async (str: string) => {
@@ -519,7 +514,7 @@ class ObrewClient {
               if (str) setEventState(displayEventStr)
             },
             onComment: async (str: string) => {
-              console.log('[obrew-client] onComment', str)
+              console.log(`${LOG_PREFIX} onComment:\n${str}`)
               return
             },
             extractText: false, // Don't accumulate text, use callbacks instead
@@ -539,7 +534,7 @@ class ObrewClient {
       return
     } catch (err) {
       setIsLoading(false)
-      console.log(`[obrew-client] ${err}`)
+      console.log(`${LOG_PREFIX} ${err}`)
       // toast.error(`Prompt request error: \n ${err}`)
     }
   }
@@ -802,7 +797,9 @@ class ObrewClient {
 
     try {
       const response = await this.connection?.api?.textInference.auditHardware()
-      return response?.data || []
+      const results = response?.data || []
+      console.log(`${LOG_PREFIX} Hardware audit result:`, results)
+      return results
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Unknown error occurred'
