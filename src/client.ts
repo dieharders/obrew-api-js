@@ -335,8 +335,16 @@ class ObrewClient {
         signal: this.abortController.signal,
       })
 
-      if (!response) {
-        throw new Error('No response from AI service')
+      // Handle possible errors
+      if (!response) throw new Error('No response from AI service')
+      // Check for error responses (only applies to object responses with success property)
+      if (
+        typeof response === 'object' &&
+        response !== null &&
+        'success' in response &&
+        response.success === false
+      ) {
+        throw new Error(`No response from AI service: ${response.message}`)
       }
 
       // Handle different response types
