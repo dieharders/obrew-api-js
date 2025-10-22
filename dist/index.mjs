@@ -345,7 +345,7 @@ ${config}`
    * Send a message and get AI response
    * Handles both streaming and non-streaming responses
    */
-  async sendMessage(messages, options) {
+  async sendMessage(messages, options, setEventState) {
     if (!this.isConnected()) {
       throw new Error("Not connected to Obrew service");
     }
@@ -354,11 +354,6 @@ ${config}`
       const response = await this.connection?.api?.textInference.generate({
         body: {
           messages,
-          responseMode: "chat",
-          temperature: 0.7,
-          max_tokens: 2048,
-          stream: false,
-          // @TODO Non-streaming for now
           ...options
         },
         signal: this.abortController.signal
@@ -374,7 +369,32 @@ ${config}`
         const httpResponse = response;
         const contentType = httpResponse.headers.get("content-type");
         if (contentType?.includes("event-stream")) {
-          return await this.handleStreamResponse(httpResponse);
+          return await this.handleStreamResponse(
+            httpResponse,
+            {
+              onData: (res) => {
+                console.log(`onData:
+${res}`);
+              },
+              onFinish: async () => {
+                console.log(`${LOG_PREFIX} stream finished!`);
+                return;
+              },
+              onEvent: async (str) => {
+                this.onStreamEvent(str);
+                const displayEventStr = str.replace(/_/g, " ") + "...";
+                if (str) setEventState?.(displayEventStr);
+              },
+              onComment: async (str) => {
+                console.log(`${LOG_PREFIX} onComment:
+${str}`);
+                return;
+              },
+              extractText: false
+              // Don't accumulate text, use callbacks instead
+            },
+            this.abortController
+          );
         } else {
           const data = await httpResponse.json();
           return this.extractTextFromResponse(data);
@@ -389,93 +409,11 @@ ${config}`
     }
   }
   /**
-   * Handle non-streaming result
-   * Extracts text using the unified extraction logic
+   * Handle streaming events
    */
-  onNonStreamResult({
-    result,
-    setResponseText
-  }) {
-    console.log(`${LOG_PREFIX} non-stream finished!`);
-    const text = this.extractTextFromResponse(result);
-    if (text) setResponseText?.(text);
-  }
-  /**
-   * Handle streaming result
-   * Extracts text from individual stream chunks
-   */
-  async onStreamResult({
-    result,
-    setResponseText
-  }) {
-    try {
-      const parsedResult = result ? JSON.parse(result) : null;
-      const data = parsedResult?.data;
-      const eventName = parsedResult?.event;
-      const text = this.extractTextFromResponse(data || parsedResult);
-      if (text)
-        setResponseText?.((prevText) => {
-          if (eventName === "GENERATING_CONTENT") return text;
-          return prevText += text;
-        });
-      return;
-    } catch (err) {
-      console.log(`${LOG_PREFIX} onStreamResult err: ${typeof result} | ${err}`);
-      return;
-    }
-  }
   onStreamEvent(eventName) {
     console.log(`${LOG_PREFIX} onStreamEvent ${eventName}`);
   }
-  async append(prompt, setEventState, setIsLoading) {
-    if (!prompt) return;
-    const newUserMsg = {
-      id: prompt.id,
-      role: prompt.role,
-      content: prompt.content,
-      // always assign prompt content w/o template
-      createdAt: prompt.createdAt,
-      ...prompt.role === "user" && { username: prompt?.username || "" },
-      ...prompt.role === "assistant" && { modelId: prompt?.modelId || "" }
-    };
-    try {
-      console.log(
-        `${LOG_PREFIX} Sending request to inference server...${newUserMsg}`
-      );
-      const response = {};
-      if (response?.body?.getReader) {
-        await this.handleStreamResponse(
-          response,
-          {
-            onData: (res) => this.onStreamResult({ result: res }),
-            onFinish: async () => {
-              console.log(`${LOG_PREFIX} stream finished!`);
-              return;
-            },
-            onEvent: async (str) => {
-              this.onStreamEvent(str);
-              const displayEventStr = str.replace(/_/g, " ") + "...";
-              if (str) setEventState(displayEventStr);
-            },
-            onComment: async (str) => {
-              console.log(`${LOG_PREFIX} onComment:
-${str}`);
-              return;
-            },
-            extractText: false
-            // Don't accumulate text, use callbacks instead
-          },
-          this.abortController
-        );
-      } else this.onNonStreamResult({ result: response });
-      setIsLoading(false);
-      return;
-    } catch (err) {
-      setIsLoading(false);
-      console.log(`${LOG_PREFIX} ${err}`);
-    }
-  }
-  // End @TODO //
   stopChat() {
     this.abortController?.abort();
     this.connection?.api?.textInference.stop();
@@ -644,12 +582,12 @@ ${str}`);
     }
   }
   /**
-   * Load agent/bot configuration settings
-   * @param botName - Optional bot name to filter configurations
+   * Return the agent/bot configuration settings
+   * @param botName - Bot name to filter configurations
    * @returns Array of agent configurations (empty array if none found)
    * @throws Error if not connected or load fails
    */
-  async loadAgentConfig(botName) {
+  async getAgentConfig(botName) {
     if (!this.isConnected()) {
       throw new Error("Not connected to Obrew service");
     }
@@ -661,7 +599,7 @@ ${str}`);
       return config || null;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error occurred";
-      throw new Error(`Failed to load agent config: ${message}`);
+      throw new Error(`Failed to get agent config: ${message}`);
     }
   }
   /**
