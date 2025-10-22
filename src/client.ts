@@ -4,7 +4,6 @@ import {
   I_ConnectionConfig,
   Message,
   I_InferenceGenerateOptions,
-  I_Message,
   I_HardwareInfo,
   I_Text_Settings,
   T_InstalledTextModel,
@@ -15,8 +14,6 @@ import {
   SSE_DATA_PREFIX,
   SSE_EVENT_PREFIX,
 } from './utils'
-
-type onChatResponseCallback = (text: string | ((t: string) => void)) => void
 
 const LOG_PREFIX = '[obrew-client]'
 
@@ -313,7 +310,8 @@ class ObrewClient {
    */
   async sendMessage(
     messages: Message[],
-    options?: Partial<I_InferenceGenerateOptions>
+    options?: Partial<I_InferenceGenerateOptions>,
+    setEventState?: (ev: string) => void
   ): Promise<string> {
     if (!this.isConnected()) {
       throw new Error('Not connected to Obrew service')
@@ -360,7 +358,29 @@ class ObrewClient {
         const contentType = httpResponse.headers.get('content-type')
         if (contentType?.includes('event-stream')) {
           // Handle streaming response
-          return await this.handleStreamResponse(httpResponse)
+          return await this.handleStreamResponse(
+            httpResponse,
+            {
+              onData: (res: string) => {
+                console.log(`onData:\n${res}`)
+              },
+              onFinish: async () => {
+                console.log(`${LOG_PREFIX} stream finished!`)
+                return
+              },
+              onEvent: async (str: string) => {
+                this.onStreamEvent(str)
+                const displayEventStr = str.replace(/_/g, ' ') + '...'
+                if (str) setEventState?.(displayEventStr)
+              },
+              onComment: async (str: string) => {
+                console.log(`${LOG_PREFIX} onComment:\n${str}`)
+                return
+              },
+              extractText: false, // Don't accumulate text, use callbacks instead
+            },
+            this.abortController
+          )
         } else {
           // Handle JSON response
           const data = await httpResponse.json()
@@ -379,54 +399,8 @@ class ObrewClient {
   }
 
   /**
-   * Handle non-streaming result
-   * Extracts text using the unified extraction logic
+   * Handle streaming events
    */
-  onNonStreamResult({
-    result,
-    setResponseText,
-  }: {
-    result: any
-    setResponseText?: onChatResponseCallback
-  }) {
-    console.log(`${LOG_PREFIX} non-stream finished!`)
-    const text = this.extractTextFromResponse(result)
-    if (text) setResponseText?.(text)
-  }
-
-  /**
-   * Handle streaming result
-   * Extracts text from individual stream chunks
-   */
-  async onStreamResult({
-    result,
-    setResponseText,
-  }: {
-    result: string
-    setResponseText?: onChatResponseCallback
-  }) {
-    try {
-      // Server sends data back
-      const parsedResult = result ? JSON.parse(result) : null
-      const data = parsedResult?.data
-      const eventName = parsedResult?.event
-
-      // Use unified text extraction
-      const text = this.extractTextFromResponse(data || parsedResult)
-
-      if (text)
-        setResponseText?.(prevText => {
-          // Overwrite prev response if final content is received
-          if (eventName === 'GENERATING_CONTENT') return text
-          return (prevText += text)
-        })
-      return
-    } catch (err) {
-      console.log(`${LOG_PREFIX} onStreamResult err: ${typeof result} | ${err}`)
-      return
-    }
-  }
-
   onStreamEvent(eventName: string) {
     switch (eventName) {
       case 'FEEDING_PROMPT':
@@ -440,110 +414,6 @@ class ObrewClient {
     }
     console.log(`${LOG_PREFIX} onStreamEvent ${eventName}`)
   }
-
-  async append(
-    prompt: I_Message,
-    setEventState: (ev: string) => void,
-    setIsLoading: (b: boolean) => void
-  ) {
-    if (!prompt) return
-
-    // Create an id for the assistant's response
-    // setResponseId(nanoid())
-
-    // Create new message for user's prompt
-    const newUserMsg: I_Message = {
-      id: prompt.id,
-      role: prompt.role,
-      content: prompt.content, // always assign prompt content w/o template
-      createdAt: prompt.createdAt,
-      ...(prompt.role === 'user' && { username: prompt?.username || '' }),
-      ...(prompt.role === 'assistant' && { modelId: prompt?.modelId || '' }),
-    }
-    // Add to/Update messages list
-    // setCurrentMessages(prev => {
-    //   if (!currentThreadId.current) {
-    //     return [newUserMsg]
-    //   }
-    //   return [...prev, newUserMsg]
-    // })
-
-    // Create new thread
-    // setThreads({})
-
-    // Request response
-    try {
-      // Reset state
-      // setResponseText('')
-      // setIsLoading(true)
-      // abortRef.current = false
-
-      // Send request completion for prompt
-      console.log(
-        `${LOG_PREFIX} Sending request to inference server...${newUserMsg}`
-      )
-      // const mode =
-      //   settings?.attention?.response_mode || DEFAULT_CONVERSATION_MODE
-      // const options: I_InferenceGenerateOptions = {
-      //   responseMode: mode,
-      //   toolResponseMode: settings?.attention?.tool_response_mode,
-      //   toolUseMode: settings?.attention?.tool_use_mode,
-      //   tools: settings?.tools?.assigned,
-      //   prompt: prompt?.content,
-      //   promptTemplate: settings?.prompt?.promptTemplate?.text,
-      //   systemMessage: settings?.system?.systemMessage,
-      //   memory: settings?.memory,
-      //   ...settings?.performance,
-      //   ...settings?.response,
-      // }
-
-      // @TODO Call a specific agent by name using sendMessage()
-      const response = {} as Response // await this.sendMessage(...)
-      // console.log(`${LOG_PREFIX} Prompt response: ${response}`)
-
-      // Check success if streamed
-      if (response?.body?.getReader) {
-        // Process the stream into text tokens
-        await this.handleStreamResponse(
-          response,
-          {
-            onData: (res: string) => this.onStreamResult({ result: res }),
-            onFinish: async () => {
-              console.log(`${LOG_PREFIX} stream finished!`)
-              return
-            },
-            onEvent: async (str: string) => {
-              this.onStreamEvent(str)
-              const displayEventStr = str.replace(/_/g, ' ') + '...'
-              if (str) setEventState(displayEventStr)
-            },
-            onComment: async (str: string) => {
-              console.log(`${LOG_PREFIX} onComment:\n${str}`)
-              return
-            },
-            extractText: false, // Don't accumulate text, use callbacks instead
-          },
-          this.abortController
-        )
-      }
-
-      // Check success if not streamed
-      else this.onNonStreamResult({ result: response })
-
-      // Save final results
-      // setCurrentMessages()
-
-      // Finish
-      setIsLoading(false)
-      return
-    } catch (err) {
-      setIsLoading(false)
-      console.log(`${LOG_PREFIX} ${err}`)
-      // toast.error(`Prompt request error: \n ${err}`)
-    }
-  }
-
-  // End @TODO //
 
   stopChat() {
     this.abortController?.abort()
