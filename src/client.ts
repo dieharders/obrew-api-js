@@ -326,10 +326,6 @@ class ObrewClient {
       const response = await this.connection?.api?.textInference.generate({
         body: {
           messages,
-          responseMode: 'chat',
-          temperature: 0.7,
-          max_tokens: 2048,
-          stream: false, // @TODO Non-streaming for now
           ...options,
         },
         signal: this.abortController.signal,
@@ -750,12 +746,12 @@ class ObrewClient {
   }
 
   /**
-   * Load agent/bot configuration settings
-   * @param botName - Optional bot name to filter configurations
+   * Return the agent/bot configuration settings
+   * @param botName - Bot name to filter configurations
    * @returns Array of agent configurations (empty array if none found)
    * @throws Error if not connected or load fails
    */
-  async loadAgentConfig(botName?: string): Promise<I_Text_Settings | null> {
+  async getAgentConfig(botName: string): Promise<I_Text_Settings | null> {
     if (!this.isConnected()) {
       throw new Error('Not connected to Obrew service')
     }
@@ -769,7 +765,7 @@ class ObrewClient {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Unknown error occurred'
-      throw new Error(`Failed to load agent config: ${message}`)
+      throw new Error(`Failed to get agent config: ${message}`)
     }
   }
 
