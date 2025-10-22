@@ -445,7 +445,6 @@ interface I_ServiceApis extends I_BaseServiceApis {
     };
 }
 
-type onChatResponseCallback = (text: string | ((t: string) => void)) => void;
 declare class ObrewClient {
     private hasConnected;
     private abortController;
@@ -465,17 +464,8 @@ declare class ObrewClient {
     disconnect(): void;
     private extractTextFromResponse;
     private handleStreamResponse;
-    sendMessage(messages: Message[], options?: Partial<I_InferenceGenerateOptions>): Promise<string>;
-    onNonStreamResult({ result, setResponseText, }: {
-        result: any;
-        setResponseText?: onChatResponseCallback;
-    }): void;
-    onStreamResult({ result, setResponseText, }: {
-        result: string;
-        setResponseText?: onChatResponseCallback;
-    }): Promise<void>;
+    sendMessage(messages: Message[], options?: Partial<I_InferenceGenerateOptions>, setEventState?: (ev: string) => void): Promise<string>;
     onStreamEvent(eventName: string): void;
-    append(prompt: I_Message, setEventState: (ev: string) => void, setIsLoading: (b: boolean) => void): Promise<void>;
     stopChat(): void;
     installModel(repoId: string, filename?: string): Promise<string>;
     uninstallModel(repoId: string, filename: string): Promise<void>;
@@ -488,7 +478,7 @@ declare class ObrewClient {
     getLoadedModel(): Promise<I_LoadedModelRes | null>;
     getInstalledModels(): Promise<T_InstalledTextModel[]>;
     saveAgentConfig(config: I_Text_Settings): Promise<I_Text_Settings[]>;
-    loadAgentConfig(botName?: string): Promise<I_Text_Settings | null>;
+    getAgentConfig(botName: string): Promise<I_Text_Settings | null>;
     deleteAgentConfig(botName: string): Promise<I_Text_Settings[]>;
     auditHardware(): Promise<I_HardwareInfo[]>;
 }
