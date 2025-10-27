@@ -80,7 +80,7 @@ var createServices = (config, response) => {
             redirect: "follow",
             referrerPolicy: "no-referrer",
             // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body,
+            ...method !== "GET" && method !== "HEAD" && { body },
             ...signal && { signal }
           });
           if (!res)

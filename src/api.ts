@@ -100,7 +100,7 @@ export const createServices = (
             headers, // { 'Content-Type': 'multipart/form-data' }, // Browser will set this automatically for us for "formData"
             redirect: 'follow',
             referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body,
+            ...(method !== 'GET' && method !== 'HEAD' && { body }),
             ...(signal && { signal }),
           })
 
