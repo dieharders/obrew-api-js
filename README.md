@@ -1,10 +1,13 @@
 # Obrew JS API
 
+> [!WARNING]
+> 🚧 This project is currently under active development. APIs and features may change without notice. 🚧
+
 A TypeScript/JavaScript API library providing React hooks for interacting with the Obrew AI backend services.
 
 Used to interact with Obrew Studio: Server https://github.com/dieharders/obrew-studio-server
 
-Used by the Obrew Studio: WebUI https://github.com/dieharders/brain-dump
+Used by Obrew Studio: WebUI https://github.com/dieharders/brain-dump
 
 ## Features
 
@@ -126,31 +129,31 @@ function App() {
 ### Standalone Usage (Non-React)
 
 ```typescript
-import { getAPIConfig, createServices, setHostConnection } from "obrew-api-js";
+import { getAPIConfig, createServices, setHostConnection } from 'obrew-api-js'
 
 // Configure connection (optional - defaults to http://localhost:8008)
 setHostConnection({
-  domain: "http://localhost",
-  port: "8008",
-});
+  domain: 'http://localhost',
+  port: '8008',
+})
 
 // Get API configuration from backend
-const apiConfig = await getAPIConfig();
+const apiConfig = await getAPIConfig()
 
 // Create service API clients
-const services = createServices(apiConfig);
+const services = createServices(apiConfig)
 
 // Use the API services
 if (services) {
   const response = await services.textInference.generate({
     body: {
-      messages: [{ role: "user", content: "Hello!" }],
-      responseMode: "chat",
+      messages: [{ role: 'user', content: 'Hello!' }],
+      responseMode: 'chat',
     },
     signal: new AbortController().signal,
-  });
+  })
 
-  console.log(response);
+  console.log(response)
 }
 ```
 
@@ -159,17 +162,17 @@ if (services) {
 Configure the backend connection using the `setHostConnection` utility:
 
 ```typescript
-import { setHostConnection, getHostConnection } from "obrew-api-js";
+import { setHostConnection, getHostConnection } from 'obrew-api-js'
 
 // Set host connection
 setHostConnection({
-  domain: "http://localhost",
-  port: "8008",
-});
+  domain: 'http://localhost',
+  port: '8008',
+})
 
 // Get current connection settings
-const currentConnection = getHostConnection();
-console.log(currentConnection); // { domain: 'http://localhost', port: '8008' }
+const currentConnection = getHostConnection()
+console.log(currentConnection) // { domain: 'http://localhost', port: '8008' }
 ```
 
 Default configuration:
@@ -235,20 +238,20 @@ Add and manage document collections for RAG (Retrieval-Augmented Generation):
 // Add a document to a collection
 await serviceApis.memory.addDocument({
   body: {
-    collectionId: "my-collection",
+    collectionId: 'my-collection',
     documents: [
       /* document objects */
     ],
   },
-});
+})
 
 // Get all collections
-const collections = await serviceApis.memory.getAllCollections();
+const collections = await serviceApis.memory.getAllCollections()
 
 // Query chunks
 const chunks = await serviceApis.memory.getChunks({
-  queryParams: { collectionId: "my-collection" },
-});
+  queryParams: { collectionId: 'my-collection' },
+})
 ```
 
 ### Tool Management
@@ -257,12 +260,12 @@ Manage and execute custom tool functions for AI agent capabilities:
 
 ```typescript
 // Get available tool functions
-const tools = await serviceApis.storage.getToolFunctions();
+const tools = await serviceApis.storage.getToolFunctions()
 
 // Get tool schema for a specific tool file
 const schema = await serviceApis.storage.getToolSchema({
-  queryParams: { filename: "my_tool.py" },
-});
+  queryParams: { filename: 'my_tool.py' },
+})
 
 // Save tool settings
 await serviceApis.storage.saveToolSettings({
@@ -271,7 +274,7 @@ await serviceApis.storage.saveToolSettings({
       /* tool configuration objects */
     ],
   },
-});
+})
 ```
 
 ### Storage
@@ -286,27 +289,27 @@ await serviceApis.storage.saveBotSettings({
       /* bot configuration */
     },
   },
-});
+})
 
 // Save chat thread
 await serviceApis.storage.saveChatThread({
   body: {
-    threadId: "thread-123",
+    threadId: 'thread-123',
     thread: {
       /* thread data */
     },
   },
-});
+})
 
 // Get chat threads
 const threads = await serviceApis.storage.getChatThread({
-  queryParams: { threadId: "thread-123" },
-});
+  queryParams: { threadId: 'thread-123' },
+})
 
 // Delete a chat thread
 await serviceApis.storage.deleteChatThread({
-  queryParams: { threadId: "thread-123" },
-});
+  queryParams: { threadId: 'thread-123' },
+})
 ```
 
 ## Type Definitions
@@ -321,7 +324,7 @@ import type {
   I_Thread,
   I_Tool_Definition,
   // ... and many more
-} from "obrew-api-js";
+} from 'obrew-api-js'
 ```
 
 ## Error Handling
@@ -330,9 +333,9 @@ All API methods return responses with a consistent structure:
 
 ```typescript
 interface I_GenericAPIResponse<DataResType> {
-  success: boolean;
-  message: string;
-  data: DataResType;
+  success: boolean
+  message: string
+  data: DataResType
 }
 ```
 
@@ -342,18 +345,18 @@ The library handles errors internally and returns them in a standardized format:
 try {
   const result = await serviceApis.textInference.generate({
     body: {
-      messages: [{ role: "user", content: "Hello!" }],
-      responseMode: "chat",
+      messages: [{ role: 'user', content: 'Hello!' }],
+      responseMode: 'chat',
     },
-  });
+  })
 
   if (result.success) {
-    console.log("Response:", result.data);
+    console.log('Response:', result.data)
   } else {
-    console.error("API Error:", result.message);
+    console.error('API Error:', result.message)
   }
 } catch (error) {
   // Network or unexpected errors
-  console.error("Request failed:", error);
+  console.error('Request failed:', error)
 }
 ```
