@@ -513,7 +513,7 @@ export interface I_DeleteTextModelReqPayload {
 
 export interface I_ToolSchemaReqPayload {
   filename: string
-  tool_name?: string
+  tool_name: string
 }
 
 export interface I_ServiceApis extends I_BaseServiceApis {

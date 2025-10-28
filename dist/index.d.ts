@@ -400,7 +400,7 @@ interface I_DeleteTextModelReqPayload {
 }
 interface I_ToolSchemaReqPayload {
     filename: string;
-    tool_name?: string;
+    tool_name: string;
 }
 interface I_ServiceApis extends I_BaseServiceApis {
     textInference: {
