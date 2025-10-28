@@ -344,6 +344,8 @@ export interface I_ToolFunctionSchemaRes {
   params_schema?: any | undefined
   params_example?: any | undefined
   output_type?: string[]
+  json_schema?: string | undefined
+  typescript_schema?: string | undefined
 }
 
 export interface I_Tool_Definition extends I_ToolFunctionSchemaRes {
@@ -511,6 +513,7 @@ export interface I_DeleteTextModelReqPayload {
 
 export interface I_ToolSchemaReqPayload {
   filename: string
+  tool_name?: string
 }
 
 export interface I_ServiceApis extends I_BaseServiceApis {
