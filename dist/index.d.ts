@@ -273,6 +273,8 @@ interface I_ToolFunctionSchemaRes {
     params_schema?: any | undefined;
     params_example?: any | undefined;
     output_type?: string[];
+    json_schema?: string | undefined;
+    typescript_schema?: string | undefined;
 }
 interface I_Tool_Definition extends I_ToolFunctionSchemaRes {
     name: string;
@@ -398,6 +400,7 @@ interface I_DeleteTextModelReqPayload {
 }
 interface I_ToolSchemaReqPayload {
     filename: string;
+    tool_name?: string;
 }
 interface I_ServiceApis extends I_BaseServiceApis {
     textInference: {
