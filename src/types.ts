@@ -126,6 +126,7 @@ export interface I_LLM_Options {
 
 export const DEFAULT_CONVERSATION_MODE = 'instruct'
 export const DEFAULT_TOOL_RESPONSE_MODE = 'answer'
+export const TOOL_RESPONSE_MODE_RESULT = 'result'
 export const BASE_RETRIEVAL_METHOD = 'base'
 export const AUGMENTED_RETRIEVAL_METHOD = 'augmented'
 export const AGENT_RETRIEVAL_METHOD = 'agent'
