@@ -657,6 +657,7 @@ var ModelID = /* @__PURE__ */ ((ModelID2) => {
 })(ModelID || {});
 var DEFAULT_CONVERSATION_MODE = "instruct";
 var DEFAULT_TOOL_RESPONSE_MODE = "answer";
+var TOOL_RESPONSE_MODE_RESULT = "result";
 var BASE_RETRIEVAL_METHOD = "base";
 var AUGMENTED_RETRIEVAL_METHOD = "augmented";
 var AGENT_RETRIEVAL_METHOD = "agent";
@@ -675,6 +676,7 @@ exports.DEFAULT_TOOL_RESPONSE_MODE = DEFAULT_TOOL_RESPONSE_MODE;
 exports.DEFAULT_TOOL_USE_MODE = DEFAULT_TOOL_USE_MODE;
 exports.ModelID = ModelID;
 exports.NATIVE_TOOL_USE = NATIVE_TOOL_USE;
+exports.TOOL_RESPONSE_MODE_RESULT = TOOL_RESPONSE_MODE_RESULT;
 exports.UNIVERSAL_TOOL_USE = UNIVERSAL_TOOL_USE;
 exports.client = obrewClient;
 //# sourceMappingURL=index.js.map
