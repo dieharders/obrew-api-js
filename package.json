@@ -1,6 +1,6 @@
 {
   "name": "obrew-api-js",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "description": "A TypeScript API library providing React hooks for interacting with the Obrew AI backend services.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
