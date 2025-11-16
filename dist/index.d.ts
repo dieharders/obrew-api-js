@@ -331,6 +331,7 @@ interface I_Text_Settings {
     memory: I_Knowledge_State;
 }
 interface I_ConnectionConfig {
+    protocol: string;
     domain: string;
     port: string;
     version: string;
