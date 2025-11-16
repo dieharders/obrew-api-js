@@ -583,7 +583,8 @@ class ObrewClient {
     try {
       const response = await this.connection?.api?.textInference.installed()
       const result = response?.data
-      if (!result || result.length <= 0) throw new Error('No results.')
+      // Return empty array if no models are installed (valid state)
+      if (!result || result.length <= 0) return []
       return result
     } catch (error) {
       const message =
