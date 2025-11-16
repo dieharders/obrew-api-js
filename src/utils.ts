@@ -15,11 +15,15 @@ export const SSE_COMMENT_PREFIX = ':'
  */
 export const defaultPort = '8008'
 /**
- * Default domain for Obrew API
- * @TODO We need a method to tell whether the app is currently running locally (dev-mode) or hosted on server (web).
+ * Default protocol for Obrew API
  */
-export const defaultDomain = 'http://localhost'
+export const defaultProtocol = 'https'
+/**
+ * Default domain for Obrew API (without protocol)
+ */
+export const defaultDomain = 'localhost'
 export const DEFAULT_OBREW_CONFIG: I_ConnectionConfig = {
+  protocol: defaultProtocol,
   domain: defaultDomain,
   port: defaultPort,
   version: 'v1',
@@ -35,9 +39,10 @@ export const DEFAULT_OBREW_CONNECTION: I_Connection = {
  * @returns The complete origin URL (e.g., "http://localhost:8008")
  */
 export const createDomainName = (config: I_ConnectionConfig): string => {
-  const { port, domain } = config
+  const { protocol, port, domain } = config
+  const PROTOCOL = protocol || defaultProtocol
   const PORT = port || defaultPort
   const DOMAIN = domain === '0.0.0.0' ? defaultDomain : domain || defaultDomain
-  const origin = `${DOMAIN}:${PORT}`
+  const origin = `${PROTOCOL}://${DOMAIN}:${PORT}`
   return origin
 }
