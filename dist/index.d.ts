@@ -467,6 +467,7 @@ declare class ObrewClient {
     }>;
     cancelRequest(): void;
     disconnect(): void;
+    private handlePotentialConnectionError;
     private extractTextFromResponse;
     private handleStreamResponse;
     sendMessage(messages: Message[], options?: Partial<I_InferenceGenerateOptions>, setEventState?: (ev: string) => void): Promise<string>;
