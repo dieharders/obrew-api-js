@@ -557,7 +557,7 @@ ${str}`);
     try {
       const response = await this.connection?.api?.textInference.installed();
       const result = response?.data;
-      if (!result || result.length <= 0) throw new Error("No results.");
+      if (!result || result.length <= 0) return [];
       return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error occurred";
