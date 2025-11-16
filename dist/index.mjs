@@ -251,6 +251,16 @@ ${config}`
   }
   // Core Helper Methods //
   /**
+   * Check if an error is a connection/network error
+   * If so, mark the client as disconnected
+   */
+  handlePotentialConnectionError(error) {
+    if (error instanceof Error && (error.message.includes("fetch") || error.message.includes("network") || error.message.includes("ECONNREFUSED") || error.message.includes("Failed to fetch") || error.message.includes("NetworkError") || error.message.includes("ERR_CONNECTION"))) {
+      console.warn(`${LOG_PREFIX} Connection lost, marking as disconnected`);
+      this.hasConnected = false;
+    }
+  }
+  /**
    * Extract text from various response formats
    * Handles multiple response types from different API endpoints
    */
@@ -408,6 +418,7 @@ ${str}`);
       if (error instanceof Error && error.name === "AbortError") {
         throw new Error("Request was cancelled");
       }
+      this.handlePotentialConnectionError(error);
       throw error;
     }
   }
@@ -448,6 +459,7 @@ ${str}`);
       }
       throw new Error("No response data from model installation");
     } catch (error) {
+      this.handlePotentialConnectionError(error);
       const message = error instanceof Error ? error.message : "Unknown error occurred";
       throw new Error(`Failed to install model: ${message}`);
     }
@@ -557,9 +569,10 @@ ${str}`);
     try {
       const response = await this.connection?.api?.textInference.installed();
       const result = response?.data;
-      if (!result || result.length <= 0) throw new Error("No results.");
+      if (!result || result.length <= 0) return [];
       return result;
     } catch (error) {
+      this.handlePotentialConnectionError(error);
       const message = error instanceof Error ? error.message : "Unknown error occurred";
       throw new Error(`Failed to get installed models: ${message}`);
     }
@@ -601,6 +614,7 @@ ${str}`);
       const config = response?.data?.find((c) => c.model.botName === botName);
       return config || null;
     } catch (error) {
+      this.handlePotentialConnectionError(error);
       const message = error instanceof Error ? error.message : "Unknown error occurred";
       throw new Error(`Failed to get agent config: ${message}`);
     }
