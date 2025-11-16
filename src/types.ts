@@ -420,6 +420,7 @@ export interface I_Text_Settings {
 // ============================================================================
 
 export interface I_ConnectionConfig {
+  protocol: string
   domain: string
   port: string
   version: string

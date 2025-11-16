@@ -3,8 +3,10 @@ var SSE_DATA_PREFIX = "data:";
 var SSE_EVENT_PREFIX = "event:";
 var SSE_COMMENT_PREFIX = ":";
 var defaultPort = "8008";
-var defaultDomain = "http://localhost";
+var defaultProtocol = "https";
+var defaultDomain = "localhost";
 var DEFAULT_OBREW_CONFIG = {
+  protocol: defaultProtocol,
   domain: defaultDomain,
   port: defaultPort,
   version: "v1",
@@ -16,10 +18,11 @@ var DEFAULT_OBREW_CONNECTION = {
   api: null
 };
 var createDomainName = (config) => {
-  const { port, domain } = config;
+  const { protocol, port, domain } = config;
+  const PROTOCOL = protocol || defaultProtocol;
   const PORT = port || defaultPort;
   const DOMAIN = domain === "0.0.0.0" ? defaultDomain : domain || defaultDomain;
-  const origin = `${DOMAIN}:${PORT}`;
+  const origin = `${PROTOCOL}://${DOMAIN}:${PORT}`;
   return origin;
 };
 
