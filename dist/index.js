@@ -710,6 +710,10 @@ ${str}`);
     }
     try {
       const response = await this.connection?.api?.memory.installedEmbedModels();
+      if (response?.success === false) {
+        const errorMsg = response?.message || "Unknown error occurred";
+        throw new Error(errorMsg);
+      }
       return response?.data || [];
     } catch (error) {
       this.handlePotentialConnectionError(error);

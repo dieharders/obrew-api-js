@@ -782,6 +782,13 @@ class ObrewClient {
 
     try {
       const response = await this.connection?.api?.memory.installedEmbedModels()
+
+      // Check if the response indicates an error
+      if (response?.success === false) {
+        const errorMsg = response?.message || 'Unknown error occurred'
+        throw new Error(errorMsg)
+      }
+
       return response?.data || []
     } catch (error) {
       this.handlePotentialConnectionError(error)
