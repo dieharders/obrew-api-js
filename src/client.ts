@@ -716,6 +716,144 @@ class ObrewClient {
       throw new Error(`Failed to audit hardware: ${message}`)
     }
   }
+
+  // Embedding Model Methods //
+
+  /**
+   * Download an embedding model from HuggingFace
+   * @param repoId - The repository ID of the embedding model (e.g., "intfloat/multilingual-e5-large-instruct")
+   * @returns Success message with model info
+   * @throws Error if not connected or download fails
+   */
+  async installEmbeddingModel(
+    repoId: string,
+    filename: string
+  ): Promise<string> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.memory.downloadEmbedModel({
+        body: {
+          repo_id: repoId,
+          filename,
+        },
+      })
+
+      if (response?.message) {
+        return response.message
+      }
+
+      if (response?.data) {
+        return response.data
+      }
+
+      throw new Error('No response data from embedding model download')
+    } catch (error) {
+      this.handlePotentialConnectionError(error)
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to download embedding model: ${message}`)
+    }
+  }
+
+  /**
+   * Get list of installed embedding models
+   * @returns Array of installed embedding models
+   * @throws Error if not connected or request fails
+   */
+  async getInstalledEmbeddingModels() {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.memory.installedEmbedModels()
+      return response?.data || []
+    } catch (error) {
+      this.handlePotentialConnectionError(error)
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to get installed embedding models: ${message}`)
+    }
+  }
+
+  /**
+   * Get list of available embedding models for installation
+   * @returns Array of available embedding model configurations
+   * @throws Error if not connected or request fails
+   */
+  async getAvailableEmbeddingModels() {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.memory.availableEmbedModels()
+      return response?.data || []
+    } catch (error) {
+      this.handlePotentialConnectionError(error)
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to get available embedding models: ${message}`)
+    }
+  }
+
+  /**
+   * Delete an installed embedding model
+   * @param repoId - The repository ID of the embedding model to delete
+   * @returns Success message
+   * @throws Error if not connected or deletion fails
+   */
+  async deleteEmbeddingModel(repoId: string): Promise<string> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.memory.deleteEmbedModel({
+        body: {
+          repoId,
+        },
+      })
+
+      if (response?.message) {
+        return response.message
+      }
+
+      throw new Error('No response from embedding model deletion')
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to delete embedding model: ${message}`)
+    }
+  }
+
+  /**
+   * Get information about an embedding model from HuggingFace
+   * @param repoId - The repository ID of the embedding model
+   * @returns Model information from HuggingFace
+   * @throws Error if not connected or request fails
+   */
+  async getEmbeddingModelInfo(repoId: string) {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.memory.getEmbedModelInfo({
+        queryParams: {
+          repoId,
+        },
+      })
+      return response?.data || null
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to get embedding model info: ${message}`)
+    }
+  }
 }
 
 // Export singleton instance

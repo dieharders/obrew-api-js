@@ -59,6 +59,8 @@ export type {
   T_ModelConfig,
   I_ModelConfigs,
   T_InstalledTextModel,
+  T_EmbeddingModelConfig,
+  T_InstalledEmbeddingModel,
 } from './types'
 
 // ============================================================================
@@ -197,5 +199,8 @@ export type {
   T_TextInferenceAPIRequest,
   I_DeleteTextModelReqPayload,
   I_ToolSchemaReqPayload,
+  I_DownloadEmbeddingModelPayload,
+  I_DeleteEmbeddingModelPayload,
+  I_GetEmbedModelInfoPayload,
   I_ServiceApis,
 } from './types'
