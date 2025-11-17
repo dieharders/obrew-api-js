@@ -313,10 +313,10 @@ export interface I_Collection {
     tags: string
     icon: string
     sources: Array<I_Source>
-    created_at?: string
+    created_at?: string // @TODO dupe
     sharePath?: string
     favorites?: number
-    createdAt?: string
+    createdAt?: string // @TODO dupe
   }
 }
 
