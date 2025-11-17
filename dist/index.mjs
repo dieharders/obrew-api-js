@@ -451,6 +451,10 @@ ${str}`);
       const response = await this.connection?.api?.textInference.download({
         body
       });
+      if (response?.success === false) {
+        const errorMsg = response?.message || "Unknown error occurred";
+        throw new Error(errorMsg);
+      }
       if (response?.message) {
         return response.message;
       }
@@ -676,6 +680,10 @@ ${str}`);
           filename
         }
       });
+      if (response?.success === false) {
+        const errorMsg = response?.message || "Unknown error occurred";
+        throw new Error(errorMsg);
+      }
       if (response?.message) {
         return response.message;
       }

@@ -466,6 +466,12 @@ class ObrewClient {
         body,
       })
 
+      // Check if the response indicates an error
+      if (response?.success === false) {
+        const errorMsg = response?.message || 'Unknown error occurred'
+        throw new Error(errorMsg)
+      }
+
       // Server returns {success: true, message: "...", data: null}
       // Return the message field which contains the success info
       if (response?.message) {
@@ -740,6 +746,12 @@ class ObrewClient {
           filename,
         },
       })
+
+      // Check if the response indicates an error
+      if (response?.success === false) {
+        const errorMsg = response?.message || 'Unknown error occurred'
+        throw new Error(errorMsg)
+      }
 
       if (response?.message) {
         return response.message
