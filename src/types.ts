@@ -71,6 +71,21 @@ export type T_InstalledTextModel = {
   checksum: string
 }
 
+export type T_EmbeddingModelConfig = {
+  repoId: string
+  modelName: string
+  description?: string
+  dimensions?: number
+  maxTokens?: number
+}
+
+export type T_InstalledEmbeddingModel = {
+  repoId: string
+  modelName: string
+  savePath: string
+  size: number
+}
+
 // ============================================================================
 // LLM Configuration Types
 // ============================================================================
@@ -518,6 +533,19 @@ export interface I_ToolSchemaReqPayload {
   tool_name: string
 }
 
+export interface I_DownloadEmbeddingModelPayload {
+  repo_id: string
+  filename: string
+}
+
+export interface I_DeleteEmbeddingModelPayload {
+  repoId: string
+}
+
+export interface I_GetEmbedModelInfoPayload {
+  repoId: string
+}
+
 export interface I_ServiceApis extends I_BaseServiceApis {
   /**
    * Use to query the text inference engine
@@ -565,6 +593,26 @@ export interface I_ServiceApis extends I_BaseServiceApis {
     deleteCollection: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
     fileExplore: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
     wipe: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
+    downloadEmbedModel: T_GenericAPIRequest<
+      I_DownloadEmbeddingModelPayload,
+      T_GenericDataRes
+    >
+    installedEmbedModels: T_GenericAPIRequest<
+      T_GenericReqPayload,
+      T_InstalledEmbeddingModel[]
+    >
+    availableEmbedModels: T_GenericAPIRequest<
+      T_GenericReqPayload,
+      T_EmbeddingModelConfig[]
+    >
+    deleteEmbedModel: T_GenericAPIRequest<
+      I_DeleteEmbeddingModelPayload,
+      T_GenericDataRes
+    >
+    getEmbedModelInfo: T_GenericAPIRequest<
+      I_GetEmbedModelInfoPayload,
+      T_GenericDataRes
+    >
     configs: {
       chunkingStrategies: Array<string>
     }
