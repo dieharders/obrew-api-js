@@ -163,9 +163,16 @@ export interface I_InferenceGenerateOptions extends T_LLM_InferenceOptions {
   memory?: I_Knowledge_State
   tools?: string[]
   similarity_top_k?: number
-  strategy?: string
+  strategy?:
+    | 'refine'
+    | 'compact'
+    | 'simple_summarize'
+    | 'tree_summarize'
+    | 'no_text'
+    | 'context_only'
+    | 'accumulate'
+    | 'compact_accumulate'
 }
-
 export type T_LLM_InferenceOptions = I_LLM_Call_Options & I_LLM_Init_Options
 
 export interface I_LoadTextModelRequestPayload {
