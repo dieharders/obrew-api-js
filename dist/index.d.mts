@@ -117,6 +117,14 @@ declare const DEFAULT_RETRIEVAL_METHOD = "base";
 declare const NATIVE_TOOL_USE = "native";
 declare const UNIVERSAL_TOOL_USE = "universal";
 declare const DEFAULT_TOOL_USE_MODE = "universal";
+declare const STRATEGY_REFINE = "refine";
+declare const STRATEGY_COMPACT = "compact";
+declare const STRATEGY_SIMPLE_SUMMARIZE = "simple_summarize";
+declare const STRATEGY_TREE_SUMMARIZE = "tree_summarize";
+declare const STRATEGY_NO_TEXT = "no_text";
+declare const STRATEGY_CONTEXT_ONLY = "context_only";
+declare const STRATEGY_ACCUMULATE = "accumulate";
+declare const STRATEGY_COMPACT_ACCUMULATE = "compact_accumulate";
 type T_ConversationMode = 'instruct' | 'chat' | 'collab';
 type T_ToolResponseMode = 'answer' | 'result';
 type T_ToolUseMode = typeof UNIVERSAL_TOOL_USE | typeof NATIVE_TOOL_USE;
@@ -129,7 +137,7 @@ interface I_InferenceGenerateOptions extends T_LLM_InferenceOptions {
     memory?: I_Knowledge_State;
     tools?: string[];
     similarity_top_k?: number;
-    strategy?: 'refine' | 'compact' | 'simple_summarize' | 'tree_summarize' | 'no_text' | 'context_only' | 'accumulate' | 'compact_accumulate';
+    strategy?: typeof STRATEGY_REFINE | typeof STRATEGY_COMPACT | typeof STRATEGY_SIMPLE_SUMMARIZE | typeof STRATEGY_TREE_SUMMARIZE | typeof STRATEGY_NO_TEXT | typeof STRATEGY_CONTEXT_ONLY | typeof STRATEGY_ACCUMULATE | typeof STRATEGY_COMPACT_ACCUMULATE;
 }
 type T_LLM_InferenceOptions = I_LLM_Call_Options & I_LLM_Init_Options;
 interface I_LoadTextModelRequestPayload {
