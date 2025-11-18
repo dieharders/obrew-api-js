@@ -164,6 +164,15 @@ export type T_ConversationMode = 'instruct' | 'chat' | 'collab'
 export type T_ToolResponseMode = 'answer' | 'result'
 export type T_ToolUseMode = typeof UNIVERSAL_TOOL_USE | typeof NATIVE_TOOL_USE
 export type T_ToolSchemaType = 'json' | 'typescript'
+export type T_ResponseStrategy =
+  | typeof STRATEGY_REFINE
+  | typeof STRATEGY_COMPACT
+  | typeof STRATEGY_SIMPLE_SUMMARIZE
+  | typeof STRATEGY_TREE_SUMMARIZE
+  | typeof STRATEGY_NO_TEXT
+  | typeof STRATEGY_CONTEXT_ONLY
+  | typeof STRATEGY_ACCUMULATE
+  | typeof STRATEGY_COMPACT_ACCUMULATE
 
 export interface I_InferenceGenerateOptions extends T_LLM_InferenceOptions {
   responseMode?: T_ConversationMode
@@ -173,15 +182,7 @@ export interface I_InferenceGenerateOptions extends T_LLM_InferenceOptions {
   memory?: I_Knowledge_State
   tools?: string[]
   similarity_top_k?: number
-  strategy?:
-    | typeof STRATEGY_REFINE
-    | typeof STRATEGY_COMPACT
-    | typeof STRATEGY_SIMPLE_SUMMARIZE
-    | typeof STRATEGY_TREE_SUMMARIZE
-    | typeof STRATEGY_NO_TEXT
-    | typeof STRATEGY_CONTEXT_ONLY
-    | typeof STRATEGY_ACCUMULATE
-    | typeof STRATEGY_COMPACT_ACCUMULATE
+  strategy?: T_ResponseStrategy
 }
 export type T_LLM_InferenceOptions = I_LLM_Call_Options & I_LLM_Init_Options
 

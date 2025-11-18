@@ -129,6 +129,7 @@ type T_ConversationMode = 'instruct' | 'chat' | 'collab';
 type T_ToolResponseMode = 'answer' | 'result';
 type T_ToolUseMode = typeof UNIVERSAL_TOOL_USE | typeof NATIVE_TOOL_USE;
 type T_ToolSchemaType = 'json' | 'typescript';
+type T_ResponseStrategy = typeof STRATEGY_REFINE | typeof STRATEGY_COMPACT | typeof STRATEGY_SIMPLE_SUMMARIZE | typeof STRATEGY_TREE_SUMMARIZE | typeof STRATEGY_NO_TEXT | typeof STRATEGY_CONTEXT_ONLY | typeof STRATEGY_ACCUMULATE | typeof STRATEGY_COMPACT_ACCUMULATE;
 interface I_InferenceGenerateOptions extends T_LLM_InferenceOptions {
     responseMode?: T_ConversationMode;
     toolResponseMode?: T_ToolResponseMode;
@@ -137,7 +138,7 @@ interface I_InferenceGenerateOptions extends T_LLM_InferenceOptions {
     memory?: I_Knowledge_State;
     tools?: string[];
     similarity_top_k?: number;
-    strategy?: typeof STRATEGY_REFINE | typeof STRATEGY_COMPACT | typeof STRATEGY_SIMPLE_SUMMARIZE | typeof STRATEGY_TREE_SUMMARIZE | typeof STRATEGY_NO_TEXT | typeof STRATEGY_CONTEXT_ONLY | typeof STRATEGY_ACCUMULATE | typeof STRATEGY_COMPACT_ACCUMULATE;
+    strategy?: T_ResponseStrategy;
 }
 type T_LLM_InferenceOptions = I_LLM_Call_Options & I_LLM_Init_Options;
 interface I_LoadTextModelRequestPayload {
