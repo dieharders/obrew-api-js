@@ -154,6 +154,11 @@ export type T_ConversationMode = 'instruct' | 'chat' | 'collab'
 export type T_ToolResponseMode = 'answer' | 'result'
 export type T_ToolUseMode = typeof UNIVERSAL_TOOL_USE | typeof NATIVE_TOOL_USE
 export type T_ToolSchemaType = 'json' | 'typescript'
+export type T_RAG_Settings = {
+  similarity_top_k: number
+  // chunking_strategy: string // not implemented
+  // retrieval_strategy: string // not implemented
+}
 
 export interface I_InferenceGenerateOptions extends T_LLM_InferenceOptions {
   responseMode?: T_ConversationMode
@@ -162,6 +167,7 @@ export interface I_InferenceGenerateOptions extends T_LLM_InferenceOptions {
   messageFormat?: string
   memory?: I_Knowledge_State
   tools?: string[]
+  rag?: T_RAG_Settings // settings to tell how retrieval tool should perform search
 }
 
 export type T_LLM_InferenceOptions = I_LLM_Call_Options & I_LLM_Init_Options
