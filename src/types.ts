@@ -150,10 +150,29 @@ export const NATIVE_TOOL_USE = 'native'
 export const UNIVERSAL_TOOL_USE = 'universal'
 export const DEFAULT_TOOL_USE_MODE = UNIVERSAL_TOOL_USE
 
+// Response synthesizer strategies
+export const STRATEGY_REFINE = 'refine'
+export const STRATEGY_COMPACT = 'compact'
+export const STRATEGY_SIMPLE_SUMMARIZE = 'simple_summarize'
+export const STRATEGY_TREE_SUMMARIZE = 'tree_summarize'
+export const STRATEGY_NO_TEXT = 'no_text'
+export const STRATEGY_CONTEXT_ONLY = 'context_only'
+export const STRATEGY_ACCUMULATE = 'accumulate'
+export const STRATEGY_COMPACT_ACCUMULATE = 'compact_accumulate'
+
 export type T_ConversationMode = 'instruct' | 'chat' | 'collab'
 export type T_ToolResponseMode = 'answer' | 'result'
 export type T_ToolUseMode = typeof UNIVERSAL_TOOL_USE | typeof NATIVE_TOOL_USE
 export type T_ToolSchemaType = 'json' | 'typescript'
+export type T_ResponseStrategy =
+  | typeof STRATEGY_REFINE
+  | typeof STRATEGY_COMPACT
+  | typeof STRATEGY_SIMPLE_SUMMARIZE
+  | typeof STRATEGY_TREE_SUMMARIZE
+  | typeof STRATEGY_NO_TEXT
+  | typeof STRATEGY_CONTEXT_ONLY
+  | typeof STRATEGY_ACCUMULATE
+  | typeof STRATEGY_COMPACT_ACCUMULATE
 
 export interface I_InferenceGenerateOptions extends T_LLM_InferenceOptions {
   responseMode?: T_ConversationMode
@@ -162,8 +181,9 @@ export interface I_InferenceGenerateOptions extends T_LLM_InferenceOptions {
   messageFormat?: string
   memory?: I_Knowledge_State
   tools?: string[]
+  similarity_top_k?: number
+  strategy?: T_ResponseStrategy
 }
-
 export type T_LLM_InferenceOptions = I_LLM_Call_Options & I_LLM_Init_Options
 
 export interface I_LoadTextModelRequestPayload {
