@@ -121,9 +121,6 @@ type T_ConversationMode = 'instruct' | 'chat' | 'collab';
 type T_ToolResponseMode = 'answer' | 'result';
 type T_ToolUseMode = typeof UNIVERSAL_TOOL_USE | typeof NATIVE_TOOL_USE;
 type T_ToolSchemaType = 'json' | 'typescript';
-type T_RAG_Settings = {
-    similarity_top_k: number;
-};
 interface I_InferenceGenerateOptions extends T_LLM_InferenceOptions {
     responseMode?: T_ConversationMode;
     toolResponseMode?: T_ToolResponseMode;
@@ -131,7 +128,8 @@ interface I_InferenceGenerateOptions extends T_LLM_InferenceOptions {
     messageFormat?: string;
     memory?: I_Knowledge_State;
     tools?: string[];
-    rag?: T_RAG_Settings;
+    similarity_top_k?: number;
+    strategy?: string;
 }
 type T_LLM_InferenceOptions = I_LLM_Call_Options & I_LLM_Init_Options;
 interface I_LoadTextModelRequestPayload {
