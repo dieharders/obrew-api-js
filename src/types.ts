@@ -178,7 +178,7 @@ export interface I_InferenceGenerateOptions extends T_LLM_InferenceOptions {
   responseMode?: T_ConversationMode
   toolResponseMode?: T_ToolResponseMode
   toolUseMode?: T_ToolUseMode
-  messageFormat?: string
+  messageFormatOverride?: string // Optional, override the backend config
   memory?: I_Knowledge_State
   tools?: string[]
   similarity_top_k?: number
