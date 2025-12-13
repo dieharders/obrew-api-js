@@ -204,3 +204,15 @@ export type {
   I_GetEmbedModelInfoPayload,
   I_ServiceApis,
 } from './types'
+
+// ============================================================================
+// Type Exports - Vision Types
+// ============================================================================
+
+export type {
+  I_VisionGenerateRequest,
+  I_VisionGenerateResponse,
+  I_LoadVisionModelRequest,
+  I_LoadedVisionModel,
+  I_DownloadMmprojPayload,
+} from './types'

@@ -7,6 +7,9 @@ import {
   I_HardwareInfo,
   I_Text_Settings,
   T_InstalledTextModel,
+  I_LoadedVisionModel,
+  I_LLM_Init_Options,
+  I_LLM_Call_Options,
 } from './types'
 import {
   DEFAULT_OBREW_CONNECTION,
@@ -871,6 +874,201 @@ class ObrewClient {
       const message =
         error instanceof Error ? error.message : 'Unknown error occurred'
       throw new Error(`Failed to get embedding model info: ${message}`)
+    }
+  }
+  // Vision Model Methods //
+
+  /**
+   * Load a vision model with its mmproj file
+   * @param modelPath - Path to the model GGUF file
+   * @param mmprojPath - Path to the mmproj file
+   * @param modelId - Unique identifier for the model
+   * @param modelSettings - Model initialization and call settings
+   * @throws Error if not connected or loading fails
+   */
+  async loadVisionModel({
+    modelPath,
+    mmprojPath,
+    modelId,
+    modelSettings,
+  }: {
+    modelPath: string
+    mmprojPath: string
+    modelId: string
+    modelSettings: { init: I_LLM_Init_Options; call: I_LLM_Call_Options }
+  }): Promise<void> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.visionInference?.load({
+        body: {
+          modelPath,
+          mmprojPath,
+          modelId,
+          init: modelSettings.init,
+          call: modelSettings.call,
+        },
+      })
+
+      if (!response?.success) {
+        throw new Error(response?.message || 'Failed to load vision model')
+      }
+
+      console.log(`${LOG_PREFIX} Vision model loaded: ${modelId}`)
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to load vision model: ${message}`)
+    }
+  }
+
+  /**
+   * Unload the currently loaded vision model
+   * @throws Error if not connected or unloading fails
+   */
+  async unloadVisionModel(): Promise<void> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      await this.connection?.api?.visionInference?.unload({})
+      console.log(`${LOG_PREFIX} Vision model unloaded`)
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to unload vision model: ${message}`)
+    }
+  }
+
+  /**
+   * Get currently loaded vision model info
+   * @returns The loaded vision model data, or null if no model is loaded
+   * @throws Error if not connected or request fails
+   */
+  async getLoadedVisionModel(): Promise<I_LoadedVisionModel | null> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.visionInference?.model({})
+      return response?.data || null
+    } catch (error) {
+      // Check if this is a connection error and update state
+      this.handlePotentialConnectionError(error)
+
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to get loaded vision model: ${message}`)
+    }
+  }
+
+  /**
+   * Transcribe an image using the vision model
+   * @param images - Array of base64 encoded images
+   * @param prompt - Optional prompt for transcription (defaults to generic description)
+   * @param options - Optional generation options (max_tokens, temperature, etc.)
+   * @returns The transcription text
+   * @throws Error if not connected, no vision model loaded, or transcription fails
+   */
+  async transcribeImage(
+    images: string[],
+    prompt?: string,
+    options?: { max_tokens?: number; temperature?: number }
+  ): Promise<string> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const defaultPrompt =
+        'Describe this image in detail. Include any visible text, diagrams, charts, or important visual elements.'
+
+      const response = await this.connection?.api?.visionInference?.generate({
+        body: {
+          prompt: prompt || defaultPrompt,
+          images,
+          image_type: 'base64',
+          stream: false,
+          ...options,
+        },
+      })
+
+      if (!response) {
+        throw new Error('No response from vision model')
+      }
+
+      // Handle error response
+      if (
+        typeof response === 'object' &&
+        'success' in response &&
+        !response.success
+      ) {
+        throw new Error(
+          (response as any).message || 'Vision transcription failed'
+        )
+      }
+
+      // Extract text from response
+      if (typeof response === 'object' && 'text' in response) {
+        return (response as { text: string }).text
+      }
+
+      throw new Error('Unexpected response format from vision model')
+    } catch (error) {
+      this.handlePotentialConnectionError(error)
+
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to transcribe image: ${message}`)
+    }
+  }
+
+  /**
+   * Download an mmproj file for a vision model
+   * @param repoId - The repository ID containing the mmproj file
+   * @param filename - The mmproj filename to download
+   * @param modelRepoId - The repository ID of the associated model
+   * @returns Success message
+   * @throws Error if not connected or download fails
+   */
+  async downloadMmproj(
+    repoId: string,
+    filename: string,
+    modelRepoId: string
+  ): Promise<string> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response =
+        await this.connection?.api?.visionInference?.downloadMmproj({
+          body: {
+            repo_id: repoId,
+            filename,
+            model_repo_id: modelRepoId,
+          },
+        })
+
+      if (response?.success === false) {
+        throw new Error(response?.message || 'Failed to download mmproj')
+      }
+
+      if (response?.message) {
+        return response.message
+      }
+
+      throw new Error('No response from mmproj download')
+    } catch (error) {
+      this.handlePotentialConnectionError(error)
+
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to download mmproj: ${message}`)
     }
   }
 }
