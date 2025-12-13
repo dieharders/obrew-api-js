@@ -60,6 +60,7 @@ export interface I_ModelConfigs {
 export type T_InstalledTextModel = {
   repoId: string
   savePath: { [key: string]: string }
+  mmprojPath?: string // Path to mmproj file for vision-capable models
   numTimesRun: number
   isFavorited: boolean
   validation: string
@@ -566,6 +567,44 @@ export interface I_GetEmbedModelInfoPayload {
   repoId: string
 }
 
+// ============================================================================
+// Vision Types
+// ============================================================================
+
+export interface I_VisionGenerateRequest {
+  prompt: string
+  images: string[] // Base64 encoded images
+  image_type?: 'base64' | 'path'
+  stream?: boolean
+  max_tokens?: number
+  temperature?: number
+}
+
+export interface I_VisionGenerateResponse {
+  text: string
+  finish_reason?: string
+}
+
+export interface I_LoadVisionModelRequest {
+  modelPath: string
+  mmprojPath: string
+  modelId: string
+  init: I_LLM_Init_Options
+  call: I_LLM_Call_Options
+}
+
+export interface I_LoadedVisionModel {
+  modelId: string
+  modelPath: string
+  mmprojPath: string
+}
+
+export interface I_DownloadMmprojPayload {
+  repo_id: string
+  filename: string
+  model_repo_id: string
+}
+
 export interface I_ServiceApis extends I_BaseServiceApis {
   /**
    * Use to query the text inference engine
@@ -661,5 +700,21 @@ export interface I_ServiceApis extends I_BaseServiceApis {
     saveChatThread: T_SaveChatThreadAPIRequest
     getChatThread: T_GetChatThreadAPIRequest
     deleteChatThread: T_DeleteChatThreadAPIRequest
+  }
+  /**
+   * Use to query the vision inference engine for image transcription
+   */
+  visionInference: {
+    load: T_GenericAPIRequest<I_LoadVisionModelRequest, T_GenericDataRes>
+    unload: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
+    generate: T_GenericAPIRequest<
+      I_VisionGenerateRequest,
+      I_VisionGenerateResponse
+    >
+    model: T_GenericAPIRequest<T_GenericReqPayload, I_LoadedVisionModel>
+    downloadMmproj: T_GenericAPIRequest<
+      I_DownloadMmprojPayload,
+      T_GenericDataRes
+    >
   }
 }
