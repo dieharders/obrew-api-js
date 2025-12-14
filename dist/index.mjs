@@ -803,7 +803,7 @@ ${str}`);
       throw new Error("Not connected to Obrew service");
     }
     try {
-      const response = await this.connection?.api?.visionInference?.load({
+      const response = await this.connection?.api?.vision?.load({
         body: {
           modelPath,
           mmprojPath,
@@ -830,29 +830,11 @@ ${str}`);
       throw new Error("Not connected to Obrew service");
     }
     try {
-      await this.connection?.api?.visionInference?.unload({});
+      await this.connection?.api?.vision?.unload({});
       console.log(`${LOG_PREFIX} Vision model unloaded`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error occurred";
       throw new Error(`Failed to unload vision model: ${message}`);
-    }
-  }
-  /**
-   * Get currently loaded vision model info
-   * @returns The loaded vision model data, or null if no model is loaded
-   * @throws Error if not connected or request fails
-   */
-  async getLoadedVisionModel() {
-    if (!this.isConnected()) {
-      throw new Error("Not connected to Obrew service");
-    }
-    try {
-      const response = await this.connection?.api?.visionInference?.model({});
-      return response?.data || null;
-    } catch (error) {
-      this.handlePotentialConnectionError(error);
-      const message = error instanceof Error ? error.message : "Unknown error occurred";
-      throw new Error(`Failed to get loaded vision model: ${message}`);
     }
   }
   /**
@@ -869,7 +851,7 @@ ${str}`);
     }
     try {
       const defaultPrompt = "Describe this image in detail. Include any visible text, diagrams, charts, or important visual elements.";
-      const response = await this.connection?.api?.visionInference?.generate({
+      const response = await this.connection?.api?.vision?.generate({
         body: {
           prompt: prompt || defaultPrompt,
           images,
@@ -894,39 +876,6 @@ ${str}`);
       this.handlePotentialConnectionError(error);
       const message = error instanceof Error ? error.message : "Unknown error occurred";
       throw new Error(`Failed to transcribe image: ${message}`);
-    }
-  }
-  /**
-   * Download an mmproj file for a vision model
-   * @param repoId - The repository ID containing the mmproj file
-   * @param filename - The mmproj filename to download
-   * @param modelRepoId - The repository ID of the associated model
-   * @returns Success message
-   * @throws Error if not connected or download fails
-   */
-  async downloadMmproj(repoId, filename, modelRepoId) {
-    if (!this.isConnected()) {
-      throw new Error("Not connected to Obrew service");
-    }
-    try {
-      const response = await this.connection?.api?.visionInference?.downloadMmproj({
-        body: {
-          repo_id: repoId,
-          filename,
-          model_repo_id: modelRepoId
-        }
-      });
-      if (response?.success === false) {
-        throw new Error(response?.message || "Failed to download mmproj");
-      }
-      if (response?.message) {
-        return response.message;
-      }
-      throw new Error("No response from mmproj download");
-    } catch (error) {
-      this.handlePotentialConnectionError(error);
-      const message = error instanceof Error ? error.message : "Unknown error occurred";
-      throw new Error(`Failed to download mmproj: ${message}`);
     }
   }
 };

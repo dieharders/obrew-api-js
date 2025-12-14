@@ -213,6 +213,5 @@ export type {
   I_VisionGenerateRequest,
   I_VisionGenerateResponse,
   I_LoadVisionModelRequest,
-  I_LoadedVisionModel,
   I_DownloadMmprojPayload,
 } from './types'

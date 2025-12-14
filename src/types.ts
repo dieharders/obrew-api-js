@@ -593,12 +593,6 @@ export interface I_LoadVisionModelRequest {
   call: I_LLM_Call_Options
 }
 
-export interface I_LoadedVisionModel {
-  modelId: string
-  modelPath: string
-  mmprojPath: string
-}
-
 export interface I_DownloadMmprojPayload {
   repo_id: string
   filename: string
@@ -710,11 +704,6 @@ export interface I_ServiceApis extends I_BaseServiceApis {
     generate: T_GenericAPIRequest<
       I_VisionGenerateRequest,
       I_VisionGenerateResponse
-    >
-    model: T_GenericAPIRequest<T_GenericReqPayload, I_LoadedVisionModel>
-    downloadMmproj: T_GenericAPIRequest<
-      I_DownloadMmprojPayload,
-      T_GenericDataRes
     >
   }
 }
