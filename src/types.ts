@@ -599,6 +599,52 @@ export interface I_DownloadMmprojPayload {
   model_repo_id: string
 }
 
+// ============================================================================
+// Vision Embedding Types
+// ============================================================================
+
+export interface I_VisionEmbedLoadRequest {
+  model_path: string
+  mmproj_path: string
+  model_name?: string
+  model_id?: string
+  port?: number
+  n_gpu_layers?: number
+  n_threads?: number
+  n_ctx?: number
+}
+
+export interface I_VisionEmbedLoadResponse {
+  model_name: string
+  model_id: string
+  port: number
+}
+
+export interface I_VisionEmbedRequest {
+  image_path?: string
+  image_base64?: string
+  image_type?: 'path' | 'base64'
+  collection_name?: string
+  include_transcription?: boolean
+  transcription_prompt?: string
+}
+
+export interface I_VisionEmbedResponse {
+  id: string
+  collection_name: string
+  embedding_dim: number
+  transcription?: string
+  stored: boolean
+  metadata?: Record<string, any>
+}
+
+export interface I_VisionEmbedModelInfo {
+  model_name: string
+  model_id: string
+  port: number
+  is_running: boolean
+}
+
 export interface I_ServiceApis extends I_BaseServiceApis {
   /**
    * Use to query the text inference engine
@@ -705,5 +751,14 @@ export interface I_ServiceApis extends I_BaseServiceApis {
       I_VisionGenerateRequest,
       I_VisionGenerateResponse
     >
+  }
+  /**
+   * Use for image embedding operations
+   */
+  visionEmbed: {
+    load: T_GenericAPIRequest<I_VisionEmbedLoadRequest, I_VisionEmbedLoadResponse>
+    unload: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
+    embed: T_GenericAPIRequest<I_VisionEmbedRequest, I_VisionEmbedResponse>
+    model: T_GenericAPIRequest<T_GenericReqPayload, I_VisionEmbedModelInfo>
   }
 }

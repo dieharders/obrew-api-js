@@ -215,3 +215,15 @@ export type {
   I_LoadVisionModelRequest,
   I_DownloadMmprojPayload,
 } from './types'
+
+// ============================================================================
+// Type Exports - Vision Embedding Types
+// ============================================================================
+
+export type {
+  I_VisionEmbedLoadRequest,
+  I_VisionEmbedLoadResponse,
+  I_VisionEmbedRequest,
+  I_VisionEmbedResponse,
+  I_VisionEmbedModelInfo,
+} from './types'
