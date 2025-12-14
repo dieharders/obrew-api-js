@@ -988,11 +988,20 @@ class ObrewClient {
         )
       }
 
+      console.log('[ObrewClient] Full vision response:', JSON.stringify(response, null, 2))
+
       // Extract text from response
       if (typeof response === 'object' && 'text' in response) {
-        return (response as { text: string }).text
+        const text = (response as { text: string }).text
+        console.log('[ObrewClient] Vision response:', {
+          hasText: !!text,
+          textLength: text?.length ?? 0,
+          responseKeys: Object.keys(response),
+        })
+        return text
       }
 
+      console.error('[ObrewClient] Unexpected vision response format:', response)
       throw new Error('Unexpected response format from vision model')
     } catch (error) {
       this.handlePotentialConnectionError(error)

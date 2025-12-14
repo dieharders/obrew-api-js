@@ -870,9 +870,17 @@ ${str}`);
           response.message || "Vision transcription failed"
         );
       }
+      console.log("[ObrewClient] Full vision response:", JSON.stringify(response, null, 2));
       if (typeof response === "object" && "text" in response) {
-        return response.text;
+        const text = response.text;
+        console.log("[ObrewClient] Vision response:", {
+          hasText: !!text,
+          textLength: text?.length ?? 0,
+          responseKeys: Object.keys(response)
+        });
+        return text;
       }
+      console.error("[ObrewClient] Unexpected vision response format:", response);
       throw new Error("Unexpected response format from vision model");
     } catch (error) {
       this.handlePotentialConnectionError(error);
