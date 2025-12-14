@@ -625,8 +625,7 @@ export interface I_VisionEmbedRequest {
   image_base64?: string
   image_type?: 'path' | 'base64'
   collection_name?: string
-  include_transcription?: boolean
-  transcription_prompt?: string
+  transcription_text?: string
 }
 
 export interface I_VisionEmbedResponse {
@@ -643,6 +642,19 @@ export interface I_VisionEmbedModelInfo {
   model_id: string
   port: number
   is_running: boolean
+}
+
+export interface I_VisionEmbedDownloadRequest {
+  repo_id: string
+  filename: string
+  mmproj_filename: string
+}
+
+export interface I_VisionEmbedDownloadResponse {
+  repoId: string
+  modelPath: string
+  mmprojPath: string
+  size: number
 }
 
 export interface I_ServiceApis extends I_BaseServiceApis {
@@ -756,9 +768,16 @@ export interface I_ServiceApis extends I_BaseServiceApis {
    * Use for image embedding operations
    */
   visionEmbed: {
-    load: T_GenericAPIRequest<I_VisionEmbedLoadRequest, I_VisionEmbedLoadResponse>
+    load: T_GenericAPIRequest<
+      I_VisionEmbedLoadRequest,
+      I_VisionEmbedLoadResponse
+    >
     unload: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
     embed: T_GenericAPIRequest<I_VisionEmbedRequest, I_VisionEmbedResponse>
     model: T_GenericAPIRequest<T_GenericReqPayload, I_VisionEmbedModelInfo>
+    download: T_GenericAPIRequest<
+      I_VisionEmbedDownloadRequest,
+      I_VisionEmbedDownloadResponse
+    >
   }
 }

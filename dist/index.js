@@ -870,7 +870,10 @@ ${str}`);
           response.message || "Vision transcription failed"
         );
       }
-      console.log("[ObrewClient] Full vision response:", JSON.stringify(response, null, 2));
+      console.log(
+        "[ObrewClient] Full vision response:",
+        JSON.stringify(response, null, 2)
+      );
       if (typeof response === "object" && "text" in response) {
         const text = response.text;
         console.log("[ObrewClient] Vision response:", {
@@ -880,7 +883,10 @@ ${str}`);
         });
         return text;
       }
-      console.error("[ObrewClient] Unexpected vision response format:", response);
+      console.error(
+        "[ObrewClient] Unexpected vision response format:",
+        response
+      );
       throw new Error("Unexpected response format from vision model");
     } catch (error) {
       this.handlePotentialConnectionError(error);
@@ -987,6 +993,42 @@ ${str}`);
       this.handlePotentialConnectionError(error);
       const message = error instanceof Error ? error.message : "Unknown error occurred";
       throw new Error(`Failed to get vision embed model info: ${message}`);
+    }
+  }
+  /**
+   * Download a vision embedding model (GGUF + mmproj) from HuggingFace
+   * @param repoId - The HuggingFace repository ID
+   * @param filename - The main model GGUF filename
+   * @param mmprojFilename - The mmproj GGUF filename
+   * @returns The download response with file paths
+   * @throws Error if not connected or download fails
+   */
+  async installVisionEmbedModel(repoId, filename, mmprojFilename) {
+    if (!this.isConnected()) {
+      throw new Error("Not connected to Obrew service");
+    }
+    try {
+      const response = await this.connection?.api?.visionEmbed?.download({
+        body: {
+          repo_id: repoId,
+          filename,
+          mmproj_filename: mmprojFilename
+        }
+      });
+      if (!response) {
+        throw new Error("No response from vision embed download");
+      }
+      if ("success" in response && !response.success) {
+        throw new Error(
+          response.message || "Failed to download vision embed model"
+        );
+      }
+      console.log(`${LOG_PREFIX} Vision embed model downloaded:`, response.data);
+      return response.data;
+    } catch (error) {
+      this.handlePotentialConnectionError(error);
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      throw new Error(`Failed to download vision embed model: ${message}`);
     }
   }
 };

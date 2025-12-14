@@ -226,4 +226,6 @@ export type {
   I_VisionEmbedRequest,
   I_VisionEmbedResponse,
   I_VisionEmbedModelInfo,
+  I_VisionEmbedDownloadRequest,
+  I_VisionEmbedDownloadResponse,
 } from './types'
