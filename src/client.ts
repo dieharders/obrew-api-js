@@ -7,6 +7,7 @@ import {
   I_HardwareInfo,
   I_Text_Settings,
   T_InstalledTextModel,
+  T_InstalledVisionEmbeddingModel,
   I_LLM_Init_Options,
   I_LLM_Call_Options,
   I_VisionEmbedLoadRequest,
@@ -1230,6 +1231,48 @@ class ObrewClient {
       const message =
         error instanceof Error ? error.message : 'Unknown error occurred'
       throw new Error(`Failed to delete vision embed model: ${message}`)
+    }
+  }
+
+  /**
+   * Get list of installed vision embedding models
+   * @returns Array of installed vision embedding model metadata
+   * @throws Error if not connected or request fails
+   */
+  async getInstalledVisionEmbedModels(): Promise<
+    T_InstalledVisionEmbeddingModel[]
+  > {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.visionEmbed?.installedModels(
+        {}
+      )
+
+      if (!response) {
+        throw new Error('No response from vision embed installed models')
+      }
+
+      if ('success' in response && !response.success) {
+        throw new Error(
+          (response as any).message ||
+            'Failed to get installed vision embed models'
+        )
+      }
+
+      // The response data contains the array of installed models
+      const models = (response as any).data || []
+      console.log(
+        `${LOG_PREFIX} Found ${models.length} installed vision embed models`
+      )
+      return models
+    } catch (error) {
+      this.handlePotentialConnectionError(error)
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to get installed vision embed models: ${message}`)
     }
   }
 }

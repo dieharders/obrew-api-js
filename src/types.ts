@@ -87,6 +87,13 @@ export type T_InstalledEmbeddingModel = {
   size: number
 }
 
+export type T_InstalledVisionEmbeddingModel = {
+  repoId: string
+  modelPath: string
+  mmprojPath: string
+  size: number
+}
+
 // ============================================================================
 // LLM Configuration Types
 // ============================================================================
@@ -784,5 +791,9 @@ export interface I_ServiceApis extends I_BaseServiceApis {
       I_VisionEmbedDownloadResponse
     >
     delete: T_GenericAPIRequest<{ repoId: string }, T_GenericDataRes>
+    installedModels: T_GenericAPIRequest<
+      T_GenericReqPayload,
+      T_InstalledVisionEmbeddingModel[]
+    >
   }
 }

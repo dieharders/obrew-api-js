@@ -61,6 +61,7 @@ export type {
   T_InstalledTextModel,
   T_EmbeddingModelConfig,
   T_InstalledEmbeddingModel,
+  T_InstalledVisionEmbeddingModel,
 } from './types'
 
 // ============================================================================

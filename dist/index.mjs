@@ -1059,6 +1059,38 @@ ${str}`);
       throw new Error(`Failed to delete vision embed model: ${message}`);
     }
   }
+  /**
+   * Get list of installed vision embedding models
+   * @returns Array of installed vision embedding model metadata
+   * @throws Error if not connected or request fails
+   */
+  async getInstalledVisionEmbedModels() {
+    if (!this.isConnected()) {
+      throw new Error("Not connected to Obrew service");
+    }
+    try {
+      const response = await this.connection?.api?.visionEmbed?.installedModels(
+        {}
+      );
+      if (!response) {
+        throw new Error("No response from vision embed installed models");
+      }
+      if ("success" in response && !response.success) {
+        throw new Error(
+          response.message || "Failed to get installed vision embed models"
+        );
+      }
+      const models = response.data || [];
+      console.log(
+        `${LOG_PREFIX} Found ${models.length} installed vision embed models`
+      );
+      return models;
+    } catch (error) {
+      this.handlePotentialConnectionError(error);
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      throw new Error(`Failed to get installed vision embed models: ${message}`);
+    }
+  }
 };
 var obrewClient = new ObrewClient();
 
