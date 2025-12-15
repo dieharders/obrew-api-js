@@ -592,6 +592,69 @@ export interface I_VisionGenerateResponse {
   finish_reason?: string
 }
 
+export interface I_LoadVisionModelRequest {
+  modelPath: string
+  mmprojPath: string
+  modelId: string
+  init: I_LLM_Init_Options
+  call: I_LLM_Call_Options
+}
+
+export interface I_LoadedVisionModelRes {
+  modelId: string
+  modelName: string
+  mmprojPath: string
+}
+
+export interface I_DownloadMmprojRequest {
+  repo_id: string
+  filename: string
+  model_repo_id: string
+}
+
+export interface I_DownloadMmprojResponse {
+  repoId: string
+  mmprojPath: string
+  size: number
+}
+
+export interface I_VisionEmbedLoadRequest {
+  model_path: string
+  mmproj_path: string
+  model_name?: string
+  model_id?: string
+  n_gpu_layers?: number
+  n_threads?: number
+  n_ctx?: number
+}
+
+export interface I_VisionEmbedLoadResponse {
+  model_name: string
+  model_id: string
+}
+
+export interface I_VisionEmbedModelInfo {
+  model_name: string
+  model_id: string
+  is_running: boolean
+}
+
+export interface I_VisionEmbedRequest {
+  image_path?: string
+  image_base64?: string
+  image_type?: 'path' | 'base64'
+  collection_name?: string
+  transcription_text?: string
+}
+
+export interface I_VisionEmbedResponse {
+  id: string
+  collection_name: string
+  embedding_dim: number
+  transcription?: string
+  metadata?: Record<string, unknown>
+}
+
 export interface I_VisionEmbedDownloadRequest {
   repo_id: string
   filename: string
@@ -707,10 +770,26 @@ export interface I_ServiceApis extends I_BaseServiceApis {
    * and manage vision embedding models
    */
   vision: {
+    // Vision inference endpoints
     generate: T_GenericAPIRequest<
       I_VisionGenerateRequest,
       I_VisionGenerateResponse
     >
+    load: T_GenericAPIRequest<I_LoadVisionModelRequest, T_GenericDataRes>
+    unload: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
+    model: T_GenericAPIRequest<T_GenericReqPayload, I_LoadedVisionModelRes>
+    downloadMmproj: T_GenericAPIRequest<
+      I_DownloadMmprojRequest,
+      I_DownloadMmprojResponse
+    >
+    // Vision embedding endpoints
+    loadEmbedModel: T_GenericAPIRequest<
+      I_VisionEmbedLoadRequest,
+      I_VisionEmbedLoadResponse
+    >
+    unloadEmbedModel: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
+    getEmbedModel: T_GenericAPIRequest<T_GenericReqPayload, I_VisionEmbedModelInfo>
+    embed: T_GenericAPIRequest<I_VisionEmbedRequest, I_VisionEmbedResponse>
     downloadEmbedModel: T_GenericAPIRequest<
       I_VisionEmbedDownloadRequest,
       I_VisionEmbedDownloadResponse
