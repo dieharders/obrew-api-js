@@ -1196,6 +1196,42 @@ class ObrewClient {
       throw new Error(`Failed to download vision embed model: ${message}`)
     }
   }
+
+  /**
+   * Delete a vision embedding model (GGUF + mmproj)
+   * @param repoId - The repository ID of the vision embed model to delete
+   * @throws Error if not connected or deletion fails
+   */
+  async deleteVisionEmbedModel(repoId: string): Promise<void> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.visionEmbed?.delete({
+        body: {
+          repoId,
+        },
+      })
+
+      if (!response) {
+        throw new Error('No response from vision embed delete')
+      }
+
+      if ('success' in response && !response.success) {
+        throw new Error(
+          (response as any).message || 'Failed to delete vision embed model'
+        )
+      }
+
+      console.log(`${LOG_PREFIX} Vision embed model deleted: ${repoId}`)
+    } catch (error) {
+      this.handlePotentialConnectionError(error)
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to delete vision embed model: ${message}`)
+    }
+  }
 }
 
 // Export singleton instance

@@ -703,6 +703,7 @@ export interface I_ServiceApis extends I_BaseServiceApis {
     deleteCollection: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
     fileExplore: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
     wipe: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
+    // @TODO These embedModel should be in its' own "textEmbed" object
     downloadEmbedModel: T_GenericAPIRequest<
       I_DownloadEmbeddingModelPayload,
       T_GenericDataRes
@@ -755,6 +756,7 @@ export interface I_ServiceApis extends I_BaseServiceApis {
   /**
    * Use to query the vision inference engine for image transcription
    */
+  // @TODO Do we need sep visionInference or can textInference detect if model is multimodal? Cuz we use that to download/delete...
   visionInference: {
     load: T_GenericAPIRequest<I_LoadVisionModelRequest, T_GenericDataRes>
     unload: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
@@ -767,16 +769,20 @@ export interface I_ServiceApis extends I_BaseServiceApis {
    * Use for image embedding operations
    */
   visionEmbed: {
+    // @TODO rly need this? We auto load when calling /generate
     load: T_GenericAPIRequest<
       I_VisionEmbedLoadRequest,
       I_VisionEmbedLoadResponse
     >
+    // @TODO rly need this? We always unload after exec
     unload: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
     embed: T_GenericAPIRequest<I_VisionEmbedRequest, I_VisionEmbedResponse>
+    // @TODO rly need this?
     model: T_GenericAPIRequest<T_GenericReqPayload, I_VisionEmbedModelInfo>
     download: T_GenericAPIRequest<
       I_VisionEmbedDownloadRequest,
       I_VisionEmbedDownloadResponse
     >
+    delete: T_GenericAPIRequest<{ repoId: string }, T_GenericDataRes>
   }
 }

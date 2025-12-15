@@ -569,6 +569,9 @@ interface I_ServiceApis extends I_BaseServiceApis {
         embed: T_GenericAPIRequest<I_VisionEmbedRequest, I_VisionEmbedResponse>;
         model: T_GenericAPIRequest<T_GenericReqPayload, I_VisionEmbedModelInfo>;
         download: T_GenericAPIRequest<I_VisionEmbedDownloadRequest, I_VisionEmbedDownloadResponse>;
+        delete: T_GenericAPIRequest<{
+            repoId: string;
+        }, T_GenericDataRes>;
     };
 }
 
@@ -633,6 +636,7 @@ declare class ObrewClient {
     createImageEmbedding(options: I_VisionEmbedRequest): Promise<I_VisionEmbedResponse>;
     getVisionEmbedModelInfo(): Promise<I_VisionEmbedModelInfo | null>;
     installVisionEmbedModel(repoId: string, filename: string, mmprojFilename: string): Promise<I_VisionEmbedDownloadResponse>;
+    deleteVisionEmbedModel(repoId: string): Promise<void>;
 }
 declare const obrewClient: ObrewClient;
 
