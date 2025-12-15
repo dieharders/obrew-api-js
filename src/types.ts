@@ -592,64 +592,6 @@ export interface I_VisionGenerateResponse {
   finish_reason?: string
 }
 
-export interface I_LoadVisionModelRequest {
-  modelPath: string
-  mmprojPath: string
-  modelId: string
-  init: I_LLM_Init_Options
-  call: I_LLM_Call_Options
-}
-
-export interface I_DownloadMmprojPayload {
-  repo_id: string
-  filename: string
-  model_repo_id: string
-}
-
-// ============================================================================
-// Vision Embedding Types
-// ============================================================================
-
-export interface I_VisionEmbedLoadRequest {
-  model_path: string
-  mmproj_path: string
-  model_name?: string
-  model_id?: string
-  port?: number
-  n_gpu_layers?: number
-  n_threads?: number
-  n_ctx?: number
-}
-
-export interface I_VisionEmbedLoadResponse {
-  model_name: string
-  model_id: string
-  port: number
-}
-
-export interface I_VisionEmbedRequest {
-  image_path?: string
-  image_base64?: string
-  image_type?: 'path' | 'base64'
-  collection_name?: string
-  transcription_text?: string
-}
-
-export interface I_VisionEmbedResponse {
-  id: string
-  collection_name: string
-  embedding_dim: number
-  transcription?: string
-  metadata?: Record<string, any>
-}
-
-export interface I_VisionEmbedModelInfo {
-  model_name: string
-  model_id: string
-  port: number
-  is_running: boolean
-}
-
 export interface I_VisionEmbedDownloadRequest {
   repo_id: string
   filename: string
@@ -762,36 +704,19 @@ export interface I_ServiceApis extends I_BaseServiceApis {
   }
   /**
    * Use to query the vision inference engine for image transcription
+   * and manage vision embedding models
    */
-  // @TODO Do we need sep visionInference or can textInference detect if model is multimodal? Cuz we use that to download/delete...
-  visionInference: {
-    load: T_GenericAPIRequest<I_LoadVisionModelRequest, T_GenericDataRes>
-    unload: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
+  vision: {
     generate: T_GenericAPIRequest<
       I_VisionGenerateRequest,
       I_VisionGenerateResponse
     >
-  }
-  /**
-   * Use for image embedding operations
-   */
-  visionEmbed: {
-    // @TODO rly need this? We auto load when calling /generate
-    load: T_GenericAPIRequest<
-      I_VisionEmbedLoadRequest,
-      I_VisionEmbedLoadResponse
-    >
-    // @TODO rly need this? We always unload after exec
-    unload: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
-    embed: T_GenericAPIRequest<I_VisionEmbedRequest, I_VisionEmbedResponse>
-    // @TODO rly need this?
-    model: T_GenericAPIRequest<T_GenericReqPayload, I_VisionEmbedModelInfo>
-    download: T_GenericAPIRequest<
+    downloadEmbedModel: T_GenericAPIRequest<
       I_VisionEmbedDownloadRequest,
       I_VisionEmbedDownloadResponse
     >
-    delete: T_GenericAPIRequest<{ repoId: string }, T_GenericDataRes>
-    installedModels: T_GenericAPIRequest<
+    deleteEmbedModel: T_GenericAPIRequest<{ repoId: string }, T_GenericDataRes>
+    installedEmbedModels: T_GenericAPIRequest<
       T_GenericReqPayload,
       T_InstalledVisionEmbeddingModel[]
     >

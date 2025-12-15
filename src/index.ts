@@ -213,20 +213,6 @@ export type {
 export type {
   I_VisionGenerateRequest,
   I_VisionGenerateResponse,
-  I_LoadVisionModelRequest,
-  I_DownloadMmprojPayload,
-} from './types'
-
-// ============================================================================
-// Type Exports - Vision Embedding Types
-// ============================================================================
-
-export type {
-  I_VisionEmbedLoadRequest,
-  I_VisionEmbedLoadResponse,
-  I_VisionEmbedRequest,
-  I_VisionEmbedResponse,
-  I_VisionEmbedModelInfo,
   I_VisionEmbedDownloadRequest,
   I_VisionEmbedDownloadResponse,
 } from './types'
