@@ -438,10 +438,12 @@ ${str}`);
    * Install/download a model from a repository
    * @param repoId - The repository ID of the model to install (e.g., "TheBloke/Mistral-7B-Instruct-v0.2-GGUF")
    * @param filename - Optional specific filename to download from the repository
+   * @param mmprojRepoId - Optional repo ID for mmproj file (for multimodal/vision models)
+   * @param mmprojFilename - Optional filename for mmproj file (for multimodal/vision models)
    * @returns The download result message
    * @throws Error if not connected or download fails
    */
-  async installModel(repoId, filename) {
+  async installModel(repoId, filename, mmprojRepoId, mmprojFilename) {
     if (!this.isConnected()) {
       throw new Error("Not connected to Obrew service");
     }
@@ -449,6 +451,12 @@ ${str}`);
       const body = { repo_id: repoId };
       if (filename) {
         body.filename = filename;
+      }
+      if (mmprojRepoId) {
+        body.mmproj_repo_id = mmprojRepoId;
+      }
+      if (mmprojFilename) {
+        body.mmproj_filename = mmprojFilename;
       }
       const response = await this.connection?.api?.textInference.download({
         body

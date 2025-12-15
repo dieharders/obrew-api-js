@@ -550,7 +550,7 @@ declare class ObrewClient {
     sendMessage(messages: Message[], options?: Partial<I_InferenceGenerateOptions>, setEventState?: (ev: string) => void): Promise<string>;
     onStreamEvent(eventName: string): void;
     stopChat(): void;
-    installModel(repoId: string, filename?: string): Promise<string>;
+    installModel(repoId: string, filename?: string, mmprojRepoId?: string, mmprojFilename?: string): Promise<string>;
     uninstallModel(repoId: string, filename: string): Promise<void>;
     loadModel({ modelPath, modelId, modelSettings, }: {
         modelPath: string;
