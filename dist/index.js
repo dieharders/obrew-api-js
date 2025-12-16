@@ -507,9 +507,9 @@ ${str}`);
    * @throws Error if not connected or model loading fails
    */
   async loadModel({
-    modelPath,
     modelId,
-    modelSettings
+    modelSettings,
+    modelPath
   }) {
     if (!this.isConnected()) {
       throw new Error("Not connected to Obrew service");
@@ -859,10 +859,10 @@ ${str}`);
    * @throws Error if not connected or loading fails
    */
   async loadVisionModel({
-    modelPath,
-    mmprojPath,
     modelId,
-    modelSettings
+    modelSettings,
+    modelPath,
+    mmprojPath
   }) {
     if (!this.isConnected()) {
       throw new Error("Not connected to Obrew service");

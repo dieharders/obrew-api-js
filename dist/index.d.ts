@@ -154,7 +154,7 @@ interface I_LoadTextModelRequestPayload {
     toolSchemaType?: T_ToolSchemaType;
     messages?: Message[];
     raw_input?: boolean;
-    modelPath: string;
+    modelPath?: string;
     modelId: string;
     init: I_LLM_Init_Options;
     call: I_LLM_Call_Options;
@@ -458,8 +458,8 @@ interface I_VisionGenerateResponse {
     finish_reason?: string;
 }
 interface I_LoadVisionModelRequest {
-    modelPath: string;
-    mmprojPath: string;
+    modelPath?: string;
+    mmprojPath?: string;
     modelId: string;
     init: I_LLM_Init_Options;
     call: I_LLM_Call_Options;
@@ -614,10 +614,10 @@ declare class ObrewClient {
     stopChat(): void;
     installModel(repoId: string, filename?: string, mmprojRepoId?: string, mmprojFilename?: string): Promise<string>;
     uninstallModel(repoId: string, filename: string): Promise<void>;
-    loadModel({ modelPath, modelId, modelSettings, }: {
-        modelPath: string;
+    loadModel({ modelId, modelSettings, modelPath, }: {
         modelId: string;
         modelSettings: I_Text_Settings;
+        modelPath?: string;
     }): Promise<void>;
     unloadModel(): Promise<void>;
     getLoadedModel(): Promise<I_LoadedModelRes | null>;
@@ -635,14 +635,14 @@ declare class ObrewClient {
         max_tokens?: number;
         temperature?: number;
     }): Promise<string>;
-    loadVisionModel({ modelPath, mmprojPath, modelId, modelSettings, }: {
-        modelPath: string;
-        mmprojPath: string;
+    loadVisionModel({ modelId, modelSettings, modelPath, mmprojPath, }: {
         modelId: string;
         modelSettings: {
             init: I_LLM_Init_Options;
             call: I_LLM_Call_Options;
         };
+        modelPath?: string;
+        mmprojPath?: string;
     }): Promise<void>;
     unloadVisionModel(): Promise<void>;
     getLoadedVisionModel(): Promise<I_LoadedVisionModelRes | null>;

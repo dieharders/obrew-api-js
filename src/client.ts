@@ -555,13 +555,13 @@ class ObrewClient {
    * @throws Error if not connected or model loading fails
    */
   async loadModel({
-    modelPath,
     modelId,
     modelSettings,
+    modelPath,
   }: {
-    modelPath: string
     modelId: string
     modelSettings: I_Text_Settings
+    modelPath?: string
   }): Promise<void> {
     if (!this.isConnected()) {
       throw new Error('Not connected to Obrew service')
@@ -989,15 +989,15 @@ class ObrewClient {
    * @throws Error if not connected or loading fails
    */
   async loadVisionModel({
-    modelPath,
-    mmprojPath,
     modelId,
     modelSettings,
+    modelPath,
+    mmprojPath,
   }: {
-    modelPath: string
-    mmprojPath: string
     modelId: string
     modelSettings: { init: I_LLM_Init_Options; call: I_LLM_Call_Options }
+    modelPath?: string
+    mmprojPath?: string
   }): Promise<void> {
     if (!this.isConnected()) {
       throw new Error('Not connected to Obrew service')

@@ -200,7 +200,7 @@ export interface I_LoadTextModelRequestPayload {
   toolSchemaType?: T_ToolSchemaType
   messages?: Message[]
   raw_input?: boolean
-  modelPath: string
+  modelPath?: string
   modelId: string
   init: I_LLM_Init_Options
   call: I_LLM_Call_Options
@@ -593,8 +593,8 @@ export interface I_VisionGenerateResponse {
 }
 
 export interface I_LoadVisionModelRequest {
-  modelPath: string
-  mmprojPath: string
+  modelPath?: string
+  mmprojPath?: string
   modelId: string
   init: I_LLM_Init_Options
   call: I_LLM_Call_Options
@@ -788,7 +788,10 @@ export interface I_ServiceApis extends I_BaseServiceApis {
       I_VisionEmbedLoadResponse
     >
     unloadEmbedModel: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
-    getEmbedModel: T_GenericAPIRequest<T_GenericReqPayload, I_VisionEmbedModelInfo>
+    getEmbedModel: T_GenericAPIRequest<
+      T_GenericReqPayload,
+      I_VisionEmbedModelInfo
+    >
     embed: T_GenericAPIRequest<I_VisionEmbedRequest, I_VisionEmbedResponse>
     downloadEmbedModel: T_GenericAPIRequest<
       I_VisionEmbedDownloadRequest,
