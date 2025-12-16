@@ -7,6 +7,18 @@ import {
   I_HardwareInfo,
   I_Text_Settings,
   T_InstalledTextModel,
+  T_InstalledVisionEmbeddingModel,
+  I_VisionEmbedDownloadResponse,
+  I_LoadedVisionModelRes,
+  I_VisionEmbedLoadRequest,
+  I_VisionEmbedLoadResponse,
+  I_VisionEmbedModelInfo,
+  I_VisionEmbedRequest,
+  I_VisionEmbedResponse,
+  I_VisionEmbedQueryRequest,
+  I_VisionEmbedQueryResponse,
+  I_LLM_Init_Options,
+  I_LLM_Call_Options,
 } from './types'
 import {
   DEFAULT_OBREW_CONNECTION,
@@ -447,19 +459,37 @@ class ObrewClient {
    * Install/download a model from a repository
    * @param repoId - The repository ID of the model to install (e.g., "TheBloke/Mistral-7B-Instruct-v0.2-GGUF")
    * @param filename - Optional specific filename to download from the repository
+   * @param mmprojRepoId - Optional repo ID for mmproj file (for multimodal/vision models)
+   * @param mmprojFilename - Optional filename for mmproj file (for multimodal/vision models)
    * @returns The download result message
    * @throws Error if not connected or download fails
    */
-  async installModel(repoId: string, filename?: string): Promise<string> {
+  async installModel(
+    repoId: string,
+    filename?: string,
+    mmprojRepoId?: string,
+    mmprojFilename?: string
+  ): Promise<string> {
     if (!this.isConnected()) {
       throw new Error('Not connected to Obrew service')
     }
 
     try {
       // Note: Server expects snake_case parameters
-      const body: { repo_id: string; filename?: string } = { repo_id: repoId }
+      const body: {
+        repo_id: string
+        filename?: string
+        mmproj_repo_id?: string
+        mmproj_filename?: string
+      } = { repo_id: repoId }
       if (filename) {
         body.filename = filename
+      }
+      if (mmprojRepoId) {
+        body.mmproj_repo_id = mmprojRepoId
+      }
+      if (mmprojFilename) {
+        body.mmproj_filename = mmprojFilename
       }
 
       const response = await this.connection?.api?.textInference.download({
@@ -526,13 +556,13 @@ class ObrewClient {
    * @throws Error if not connected or model loading fails
    */
   async loadModel({
-    modelPath,
     modelId,
     modelSettings,
+    modelPath,
   }: {
-    modelPath: string
     modelId: string
     modelSettings: I_Text_Settings
+    modelPath?: string
   }): Promise<void> {
     if (!this.isConnected()) {
       throw new Error('Not connected to Obrew service')
@@ -871,6 +901,465 @@ class ObrewClient {
       const message =
         error instanceof Error ? error.message : 'Unknown error occurred'
       throw new Error(`Failed to get embedding model info: ${message}`)
+    }
+  }
+  // Vision Methods //
+
+  /**
+   * Transcribe an image using the vision model
+   * @param images - Array of base64 encoded images
+   * @param prompt - Optional prompt for transcription (defaults to generic description)
+   * @param options - Optional generation options (max_tokens, temperature, etc.)
+   * @returns The transcription text
+   * @throws Error if not connected, no vision model loaded, or transcription fails
+   */
+  async transcribeImage(
+    images: string[],
+    prompt?: string,
+    options?: { max_tokens?: number; temperature?: number }
+  ): Promise<string> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const defaultPrompt =
+        'Describe this image in detail. Include any visible text, diagrams, charts, or important visual elements.'
+
+      const response = await this.connection?.api?.vision?.generate({
+        body: {
+          prompt: prompt || defaultPrompt,
+          images,
+          image_type: 'base64',
+          stream: false,
+          ...options,
+        },
+      })
+
+      if (!response) {
+        throw new Error('No response from vision model')
+      }
+
+      // Handle error response
+      if (
+        typeof response === 'object' &&
+        'success' in response &&
+        !response.success
+      ) {
+        throw new Error(
+          (response as any).message || 'Vision transcription failed'
+        )
+      }
+
+      console.log(
+        '[ObrewClient] Full vision response:',
+        JSON.stringify(response, null, 2)
+      )
+
+      // Extract text from response
+      if (typeof response === 'object' && 'text' in response) {
+        const text = (response as { text: string }).text
+        console.log('[ObrewClient] Vision response:', {
+          hasText: !!text,
+          textLength: text?.length ?? 0,
+          responseKeys: Object.keys(response),
+        })
+        return text
+      }
+
+      console.error(
+        '[ObrewClient] Unexpected vision response format:',
+        response
+      )
+      throw new Error('Unexpected response format from vision model')
+    } catch (error) {
+      this.handlePotentialConnectionError(error)
+
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to transcribe image: ${message}`)
+    }
+  }
+
+  /**
+   * Load a vision model with its mmproj file
+   * @param modelPath - Path to the model GGUF file
+   * @param mmprojPath - Path to the mmproj file
+   * @param modelId - Unique identifier for the model
+   * @param modelSettings - Model initialization and call settings
+   * @throws Error if not connected or loading fails
+   */
+  async loadVisionModel({
+    modelId,
+    modelSettings,
+    modelPath,
+    mmprojPath,
+  }: {
+    modelId: string
+    modelSettings: { init: I_LLM_Init_Options; call: I_LLM_Call_Options }
+    modelPath?: string
+    mmprojPath?: string
+  }): Promise<void> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.vision?.load({
+        body: {
+          modelPath,
+          mmprojPath,
+          modelId,
+          init: modelSettings.init,
+          call: modelSettings.call,
+        },
+      })
+
+      if (!response?.success) {
+        throw new Error(
+          (response as { message?: string })?.message ||
+            'Failed to load vision model'
+        )
+      }
+
+      console.log(`${LOG_PREFIX} Vision model loaded: ${modelId}`)
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to load vision model: ${message}`)
+    }
+  }
+
+  /**
+   * Unload the currently loaded vision model
+   * @throws Error if not connected or unloading fails
+   */
+  async unloadVisionModel(): Promise<void> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      await this.connection?.api?.vision?.unload({})
+      console.log(`${LOG_PREFIX} Vision model unloaded`)
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to unload vision model: ${message}`)
+    }
+  }
+
+  /**
+   * Get currently loaded vision model info
+   * @returns The loaded vision model data, or null if no model is loaded
+   * @throws Error if not connected or request fails
+   */
+  async getLoadedVisionModel(): Promise<I_LoadedVisionModelRes | null> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.vision?.model({})
+      return response?.data || null
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to get loaded vision model: ${message}`)
+    }
+  }
+
+  // Vision Embedding Model Methods //
+
+  /**
+   * Load a vision embedding model for creating image embeddings
+   * @param options - Model loading options including model_path and mmproj_path
+   * @returns The loaded model info (name, id)
+   * @throws Error if not connected or loading fails
+   */
+  async loadVisionEmbedModel(
+    options: I_VisionEmbedLoadRequest
+  ): Promise<I_VisionEmbedLoadResponse> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.vision?.loadEmbedModel({
+        body: options,
+      })
+
+      if (!response) {
+        throw new Error('No response from vision embed load')
+      }
+
+      if ('success' in response && !response.success) {
+        throw new Error(
+          (response as { message?: string })?.message ||
+            'Failed to load vision embed model'
+        )
+      }
+
+      console.log(`${LOG_PREFIX} Vision embed model loaded`)
+      return response.data as I_VisionEmbedLoadResponse
+    } catch (error) {
+      this.handlePotentialConnectionError(error)
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to load vision embed model: ${message}`)
+    }
+  }
+
+  /**
+   * Unload the currently loaded vision embedding model
+   * @throws Error if not connected or unloading fails
+   */
+  async unloadVisionEmbedModel(): Promise<void> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      await this.connection?.api?.vision?.unloadEmbedModel({})
+      console.log(`${LOG_PREFIX} Vision embed model unloaded`)
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to unload vision embed model: ${message}`)
+    }
+  }
+
+  /**
+   * Get information about the currently loaded vision embedding model
+   * @returns The model info or null if no model is loaded
+   * @throws Error if not connected or request fails
+   */
+  async getVisionEmbedModelInfo(): Promise<I_VisionEmbedModelInfo | null> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.vision?.getEmbedModel({})
+
+      if (!response) {
+        return null
+      }
+
+      if ('success' in response && !response.success) {
+        return null
+      }
+
+      return response.data as I_VisionEmbedModelInfo
+    } catch (error) {
+      this.handlePotentialConnectionError(error)
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to get vision embed model info: ${message}`)
+    }
+  }
+
+  /**
+   * Create an embedding for an image
+   * @param options - Embedding options including image data and collection info
+   * @returns The embedding result with id, collection name, dimension, and optional transcription
+   * @throws Error if not connected, no embed model loaded, or embedding fails
+   */
+  async createImageEmbedding(
+    options: I_VisionEmbedRequest
+  ): Promise<I_VisionEmbedResponse> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.vision?.embed({
+        body: options,
+      })
+
+      if (!response) {
+        throw new Error('No response from vision embed')
+      }
+
+      if ('success' in response && !response.success) {
+        throw new Error(
+          (response as { message?: string })?.message ||
+            'Failed to create image embedding'
+        )
+      }
+
+      console.log(`${LOG_PREFIX} Image embedding created:`, response.data)
+      return response.data as I_VisionEmbedResponse
+    } catch (error) {
+      this.handlePotentialConnectionError(error)
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to create image embedding: ${message}`)
+    }
+  }
+
+  /**
+   * Query an image collection using text similarity search
+   * @param options - Query options including query text, collection name, and optional top_k
+   * @returns The query results with matching images, similarity scores, and metadata
+   * @throws Error if not connected, collection not found, or query fails
+   */
+  async queryImageCollection(
+    options: I_VisionEmbedQueryRequest
+  ): Promise<I_VisionEmbedQueryResponse> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.vision?.queryImages({
+        body: options,
+      })
+
+      if (!response) {
+        throw new Error('No response from image query')
+      }
+
+      if ('success' in response && !response.success) {
+        throw new Error(
+          (response as { message?: string })?.message ||
+            'Failed to query image collection'
+        )
+      }
+
+      console.log(
+        `${LOG_PREFIX} Image query returned ${response.data?.results?.length ?? 0} results`
+      )
+      return response.data as I_VisionEmbedQueryResponse
+    } catch (error) {
+      this.handlePotentialConnectionError(error)
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to query image collection: ${message}`)
+    }
+  }
+
+  /**
+   * Download a vision embedding model (GGUF + mmproj) from HuggingFace
+   * @param repoId - The HuggingFace repository ID
+   * @param filename - The main model GGUF filename
+   * @param mmprojFilename - The mmproj GGUF filename
+   * @returns The download response with file paths
+   * @throws Error if not connected or download fails
+   */
+  async installVisionEmbedModel(
+    repoId: string,
+    filename: string,
+    mmprojFilename: string
+  ): Promise<I_VisionEmbedDownloadResponse> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.vision?.downloadEmbedModel({
+        body: {
+          repo_id: repoId,
+          filename,
+          mmproj_filename: mmprojFilename,
+        },
+      })
+
+      if (!response) {
+        throw new Error('No response from vision embed download')
+      }
+
+      if ('success' in response && !response.success) {
+        throw new Error(
+          (response as any).message || 'Failed to download vision embed model'
+        )
+      }
+
+      console.log(`${LOG_PREFIX} Vision embed model downloaded:`, response.data)
+      return response.data as I_VisionEmbedDownloadResponse
+    } catch (error) {
+      this.handlePotentialConnectionError(error)
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to download vision embed model: ${message}`)
+    }
+  }
+
+  /**
+   * Delete a vision embedding model (GGUF + mmproj)
+   * @param repoId - The repository ID of the vision embed model to delete
+   * @throws Error if not connected or deletion fails
+   */
+  async deleteVisionEmbedModel(repoId: string): Promise<void> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.vision?.deleteEmbedModel({
+        body: {
+          repoId,
+        },
+      })
+
+      if (!response) {
+        throw new Error('No response from vision embed delete')
+      }
+
+      if ('success' in response && !response.success) {
+        throw new Error(
+          (response as any).message || 'Failed to delete vision embed model'
+        )
+      }
+
+      console.log(`${LOG_PREFIX} Vision embed model deleted: ${repoId}`)
+    } catch (error) {
+      this.handlePotentialConnectionError(error)
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to delete vision embed model: ${message}`)
+    }
+  }
+
+  /**
+   * Get list of installed vision embedding models
+   * @returns Array of installed vision embedding model metadata
+   * @throws Error if not connected or request fails
+   */
+  async getInstalledVisionEmbedModels(): Promise<
+    T_InstalledVisionEmbeddingModel[]
+  > {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.vision?.installedEmbedModels(
+        {}
+      )
+
+      if (!response) {
+        throw new Error('No response from vision embed installed models')
+      }
+
+      if ('success' in response && !response.success) {
+        throw new Error(
+          (response as any).message ||
+            'Failed to get installed vision embed models'
+        )
+      }
+
+      // The response data contains the array of installed models
+      const models = (response as any).data || []
+      console.log(
+        `${LOG_PREFIX} Found ${models.length} installed vision embed models`
+      )
+      return models
+    } catch (error) {
+      this.handlePotentialConnectionError(error)
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to get installed vision embed models: ${message}`)
     }
   }
 }

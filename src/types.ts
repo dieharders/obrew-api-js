@@ -60,6 +60,7 @@ export interface I_ModelConfigs {
 export type T_InstalledTextModel = {
   repoId: string
   savePath: { [key: string]: string }
+  mmprojPath?: string // Path to mmproj file for vision-capable models
   numTimesRun: number
   isFavorited: boolean
   validation: string
@@ -83,6 +84,13 @@ export type T_InstalledEmbeddingModel = {
   repoId: string
   modelName: string
   savePath: string
+  size: number
+}
+
+export type T_InstalledVisionEmbeddingModel = {
+  repoId: string
+  modelPath: string
+  mmprojPath: string
   size: number
 }
 
@@ -192,7 +200,7 @@ export interface I_LoadTextModelRequestPayload {
   toolSchemaType?: T_ToolSchemaType
   messages?: Message[]
   raw_input?: boolean
-  modelPath: string
+  modelPath?: string
   modelId: string
   init: I_LLM_Init_Options
   call: I_LLM_Call_Options
@@ -566,6 +574,119 @@ export interface I_GetEmbedModelInfoPayload {
   repoId: string
 }
 
+// ============================================================================
+// Vision Types
+// ============================================================================
+
+export interface I_VisionGenerateRequest {
+  prompt: string
+  images: string[] // Base64 encoded images
+  image_type?: 'base64' | 'path'
+  stream?: boolean
+  max_tokens?: number
+  temperature?: number
+}
+
+export interface I_VisionGenerateResponse {
+  text: string
+  finish_reason?: string
+}
+
+export interface I_LoadVisionModelRequest {
+  modelPath?: string
+  mmprojPath?: string
+  modelId: string
+  init: I_LLM_Init_Options
+  call: I_LLM_Call_Options
+}
+
+export interface I_LoadedVisionModelRes {
+  modelId: string
+  modelName: string
+  mmprojPath: string
+}
+
+export interface I_VisionEmbedLoadRequest {
+  model_path: string
+  mmproj_path: string
+  model_name?: string
+  model_id?: string
+  n_gpu_layers?: number
+  n_threads?: number
+  n_ctx?: number
+}
+
+export interface I_VisionEmbedLoadResponse {
+  model_name: string
+  model_id: string
+}
+
+export interface I_VisionEmbedModelInfo {
+  model_name: string
+  model_id: string
+  is_running: boolean
+}
+
+export interface I_VisionEmbedRequest {
+  image_path?: string
+  image_base64?: string
+  image_type?: 'path' | 'base64'
+  collection_name?: string
+  transcription_text?: string
+  metadata?: {
+    file_type?: string
+    file_name?: string
+    file_size?: number
+    [key: string]: unknown
+  }
+}
+
+export interface I_VisionEmbedResponse {
+  id: string
+  collection_name: string
+  embedding_dim: number
+  transcription?: string
+  metadata?: Record<string, unknown>
+}
+
+export interface I_VisionEmbedDownloadRequest {
+  repo_id: string
+  filename: string
+  mmproj_filename: string
+}
+
+export interface I_VisionEmbedDownloadResponse {
+  repoId: string
+  modelPath: string
+  mmprojPath: string
+  size: number
+}
+
+export interface I_VisionEmbedQueryRequest {
+  query: string
+  collection_name: string
+  top_k?: number
+  include_embeddings?: boolean
+}
+
+export interface I_VisionEmbedQueryResult {
+  id: string
+  distance: number | null
+  similarity_score: number | null
+  metadata: Record<string, unknown>
+  document: string | null
+  embedding?: number[]
+}
+
+export interface I_VisionEmbedQueryResponse {
+  query: string
+  collection_name: string
+  query_model: string
+  query_embedding_dim: number
+  results: I_VisionEmbedQueryResult[]
+  total_in_collection: number
+}
+
 export interface I_ServiceApis extends I_BaseServiceApis {
   /**
    * Use to query the text inference engine
@@ -613,6 +734,7 @@ export interface I_ServiceApis extends I_BaseServiceApis {
     deleteCollection: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
     fileExplore: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
     wipe: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
+    // @TODO These embedModel should be in its' own "textEmbed" object
     downloadEmbedModel: T_GenericAPIRequest<
       I_DownloadEmbeddingModelPayload,
       T_GenericDataRes
@@ -661,5 +783,43 @@ export interface I_ServiceApis extends I_BaseServiceApis {
     saveChatThread: T_SaveChatThreadAPIRequest
     getChatThread: T_GetChatThreadAPIRequest
     deleteChatThread: T_DeleteChatThreadAPIRequest
+  }
+  /**
+   * Use to query the vision inference engine for image transcription
+   * and manage vision embedding models
+   */
+  vision: {
+    // Vision inference endpoints
+    generate: T_GenericAPIRequest<
+      I_VisionGenerateRequest,
+      I_VisionGenerateResponse
+    >
+    load: T_GenericAPIRequest<I_LoadVisionModelRequest, T_GenericDataRes>
+    unload: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
+    model: T_GenericAPIRequest<T_GenericReqPayload, I_LoadedVisionModelRes>
+    // Vision embedding endpoints
+    loadEmbedModel: T_GenericAPIRequest<
+      I_VisionEmbedLoadRequest,
+      I_VisionEmbedLoadResponse
+    >
+    unloadEmbedModel: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
+    getEmbedModel: T_GenericAPIRequest<
+      T_GenericReqPayload,
+      I_VisionEmbedModelInfo
+    >
+    embed: T_GenericAPIRequest<I_VisionEmbedRequest, I_VisionEmbedResponse>
+    queryImages: T_GenericAPIRequest<
+      I_VisionEmbedQueryRequest,
+      I_VisionEmbedQueryResponse
+    >
+    downloadEmbedModel: T_GenericAPIRequest<
+      I_VisionEmbedDownloadRequest,
+      I_VisionEmbedDownloadResponse
+    >
+    deleteEmbedModel: T_GenericAPIRequest<{ repoId: string }, T_GenericDataRes>
+    installedEmbedModels: T_GenericAPIRequest<
+      T_GenericReqPayload,
+      T_InstalledVisionEmbeddingModel[]
+    >
   }
 }

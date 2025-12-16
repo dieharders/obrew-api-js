@@ -43,6 +43,7 @@ type T_InstalledTextModel = {
     savePath: {
         [key: string]: string;
     };
+    mmprojPath?: string;
     numTimesRun: number;
     isFavorited: boolean;
     validation: string;
@@ -64,6 +65,12 @@ type T_InstalledEmbeddingModel = {
     repoId: string;
     modelName: string;
     savePath: string;
+    size: number;
+};
+type T_InstalledVisionEmbeddingModel = {
+    repoId: string;
+    modelPath: string;
+    mmprojPath: string;
     size: number;
 };
 interface I_LLM_Init_Options {
@@ -147,7 +154,7 @@ interface I_LoadTextModelRequestPayload {
     toolSchemaType?: T_ToolSchemaType;
     messages?: Message[];
     raw_input?: boolean;
-    modelPath: string;
+    modelPath?: string;
     modelId: string;
     init: I_LLM_Init_Options;
     call: I_LLM_Call_Options;
@@ -438,6 +445,101 @@ interface I_DeleteEmbeddingModelPayload {
 interface I_GetEmbedModelInfoPayload {
     repoId: string;
 }
+interface I_VisionGenerateRequest {
+    prompt: string;
+    images: string[];
+    image_type?: 'base64' | 'path';
+    stream?: boolean;
+    max_tokens?: number;
+    temperature?: number;
+}
+interface I_VisionGenerateResponse {
+    text: string;
+    finish_reason?: string;
+}
+interface I_LoadVisionModelRequest {
+    modelPath?: string;
+    mmprojPath?: string;
+    modelId: string;
+    init: I_LLM_Init_Options;
+    call: I_LLM_Call_Options;
+}
+interface I_LoadedVisionModelRes {
+    modelId: string;
+    modelName: string;
+    mmprojPath: string;
+}
+interface I_VisionEmbedLoadRequest {
+    model_path: string;
+    mmproj_path: string;
+    model_name?: string;
+    model_id?: string;
+    n_gpu_layers?: number;
+    n_threads?: number;
+    n_ctx?: number;
+}
+interface I_VisionEmbedLoadResponse {
+    model_name: string;
+    model_id: string;
+}
+interface I_VisionEmbedModelInfo {
+    model_name: string;
+    model_id: string;
+    is_running: boolean;
+}
+interface I_VisionEmbedRequest {
+    image_path?: string;
+    image_base64?: string;
+    image_type?: 'path' | 'base64';
+    collection_name?: string;
+    transcription_text?: string;
+    metadata?: {
+        file_type?: string;
+        file_name?: string;
+        file_size?: number;
+        [key: string]: unknown;
+    };
+}
+interface I_VisionEmbedResponse {
+    id: string;
+    collection_name: string;
+    embedding_dim: number;
+    transcription?: string;
+    metadata?: Record<string, unknown>;
+}
+interface I_VisionEmbedDownloadRequest {
+    repo_id: string;
+    filename: string;
+    mmproj_filename: string;
+}
+interface I_VisionEmbedDownloadResponse {
+    repoId: string;
+    modelPath: string;
+    mmprojPath: string;
+    size: number;
+}
+interface I_VisionEmbedQueryRequest {
+    query: string;
+    collection_name: string;
+    top_k?: number;
+    include_embeddings?: boolean;
+}
+interface I_VisionEmbedQueryResult {
+    id: string;
+    distance: number | null;
+    similarity_score: number | null;
+    metadata: Record<string, unknown>;
+    document: string | null;
+    embedding?: number[];
+}
+interface I_VisionEmbedQueryResponse {
+    query: string;
+    collection_name: string;
+    query_model: string;
+    query_embedding_dim: number;
+    results: I_VisionEmbedQueryResult[];
+    total_in_collection: number;
+}
 interface I_ServiceApis extends I_BaseServiceApis {
     textInference: {
         generate: T_TextInferenceAPIRequest;
@@ -487,6 +589,22 @@ interface I_ServiceApis extends I_BaseServiceApis {
         getChatThread: T_GetChatThreadAPIRequest;
         deleteChatThread: T_DeleteChatThreadAPIRequest;
     };
+    vision: {
+        generate: T_GenericAPIRequest<I_VisionGenerateRequest, I_VisionGenerateResponse>;
+        load: T_GenericAPIRequest<I_LoadVisionModelRequest, T_GenericDataRes>;
+        unload: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>;
+        model: T_GenericAPIRequest<T_GenericReqPayload, I_LoadedVisionModelRes>;
+        loadEmbedModel: T_GenericAPIRequest<I_VisionEmbedLoadRequest, I_VisionEmbedLoadResponse>;
+        unloadEmbedModel: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>;
+        getEmbedModel: T_GenericAPIRequest<T_GenericReqPayload, I_VisionEmbedModelInfo>;
+        embed: T_GenericAPIRequest<I_VisionEmbedRequest, I_VisionEmbedResponse>;
+        queryImages: T_GenericAPIRequest<I_VisionEmbedQueryRequest, I_VisionEmbedQueryResponse>;
+        downloadEmbedModel: T_GenericAPIRequest<I_VisionEmbedDownloadRequest, I_VisionEmbedDownloadResponse>;
+        deleteEmbedModel: T_GenericAPIRequest<{
+            repoId: string;
+        }, T_GenericDataRes>;
+        installedEmbedModels: T_GenericAPIRequest<T_GenericReqPayload, T_InstalledVisionEmbeddingModel[]>;
+    };
 }
 
 declare class ObrewClient {
@@ -512,12 +630,12 @@ declare class ObrewClient {
     sendMessage(messages: Message[], options?: Partial<I_InferenceGenerateOptions>, setEventState?: (ev: string) => void): Promise<string>;
     onStreamEvent(eventName: string): void;
     stopChat(): void;
-    installModel(repoId: string, filename?: string): Promise<string>;
+    installModel(repoId: string, filename?: string, mmprojRepoId?: string, mmprojFilename?: string): Promise<string>;
     uninstallModel(repoId: string, filename: string): Promise<void>;
-    loadModel({ modelPath, modelId, modelSettings, }: {
-        modelPath: string;
+    loadModel({ modelId, modelSettings, modelPath, }: {
         modelId: string;
         modelSettings: I_Text_Settings;
+        modelPath?: string;
     }): Promise<void>;
     unloadModel(): Promise<void>;
     getLoadedModel(): Promise<I_LoadedModelRes | null>;
@@ -531,9 +649,32 @@ declare class ObrewClient {
     getAvailableEmbeddingModels(): Promise<T_EmbeddingModelConfig[]>;
     deleteEmbeddingModel(repoId: string): Promise<string>;
     getEmbeddingModelInfo(repoId: string): Promise<any>;
+    transcribeImage(images: string[], prompt?: string, options?: {
+        max_tokens?: number;
+        temperature?: number;
+    }): Promise<string>;
+    loadVisionModel({ modelId, modelSettings, modelPath, mmprojPath, }: {
+        modelId: string;
+        modelSettings: {
+            init: I_LLM_Init_Options;
+            call: I_LLM_Call_Options;
+        };
+        modelPath?: string;
+        mmprojPath?: string;
+    }): Promise<void>;
+    unloadVisionModel(): Promise<void>;
+    getLoadedVisionModel(): Promise<I_LoadedVisionModelRes | null>;
+    loadVisionEmbedModel(options: I_VisionEmbedLoadRequest): Promise<I_VisionEmbedLoadResponse>;
+    unloadVisionEmbedModel(): Promise<void>;
+    getVisionEmbedModelInfo(): Promise<I_VisionEmbedModelInfo | null>;
+    createImageEmbedding(options: I_VisionEmbedRequest): Promise<I_VisionEmbedResponse>;
+    queryImageCollection(options: I_VisionEmbedQueryRequest): Promise<I_VisionEmbedQueryResponse>;
+    installVisionEmbedModel(repoId: string, filename: string, mmprojFilename: string): Promise<I_VisionEmbedDownloadResponse>;
+    deleteVisionEmbedModel(repoId: string): Promise<void>;
+    getInstalledVisionEmbedModels(): Promise<T_InstalledVisionEmbeddingModel[]>;
 }
 declare const obrewClient: ObrewClient;
 
 declare const DEFAULT_OBREW_CONFIG: I_ConnectionConfig;
 
-export { AGENT_RETRIEVAL_METHOD, AUGMENTED_RETRIEVAL_METHOD, BASE_RETRIEVAL_METHOD, DEFAULT_CONVERSATION_MODE, DEFAULT_OBREW_CONFIG, DEFAULT_RETRIEVAL_METHOD, DEFAULT_TOOL_RESPONSE_MODE, DEFAULT_TOOL_USE_MODE, type I_API, type I_Attention_State, type I_BaseServiceApis, type I_ChunkMetadata, type I_Collection, type I_ConnectResponse, type I_Connection, type I_ConnectionConfig, type I_DeleteEmbeddingModelPayload, type I_DeleteTextModelReqPayload, type I_DocumentChunk, type I_DownloadEmbeddingModelPayload, type I_Endpoint, type I_GenericAPIRequestParams, type I_GenericAPIResponse, type I_GetEmbedModelInfoPayload, type I_HardwareAuditResponse, type I_HardwareInfo, type I_InferenceGenerateOptions, type I_Knowledge_State, type I_LLM_Call_Options, type I_LLM_Init_Options, type I_LLM_Options, type I_LoadTextModelRequestPayload, type I_LoadedModelRes, type I_Message, type I_ModelConfigs, type I_Model_State, type I_NonStreamChatbotResponse, type I_NonStreamPlayground, type I_PromptTemplates, type I_Prompt_State, type I_RAG_Strat_State, type I_Response_State, type I_ServiceApis, type I_ServicesResponse, type I_Source, type I_System_State, type I_Text_Settings, type I_Thread, type I_ToolFunctionSchemaRes, type I_ToolSchemaReqPayload, type I_Tool_Def_Parameter, type I_Tool_Definition, type I_Tool_Parameter, type I_Tools_Inference_State, type Message, ModelID, NATIVE_TOOL_USE, TOOL_RESPONSE_MODE_RESULT, type T_APIConfigOptions, type T_ConversationMode, type T_DeleteChatThreadAPIRequest, type T_EmbeddingModelConfig, type T_Endpoint, type T_GenericAPIRequest, type T_GenericDataRes, type T_GenericReqPayload, type T_GetChatThreadAPIRequest, type T_InputOptionTypes, type T_InstalledEmbeddingModel, type T_InstalledTextModel, type T_LLM_InferenceOptions, type T_ModelConfig, type T_PromptTemplate, type T_SaveChatThreadAPIRequest, type T_SystemPrompt, type T_SystemPrompts, type T_TextInferenceAPIRequest, type T_ToolResponseMode, type T_ToolSchemaType, type T_ToolUseMode, type T_Tool_Param_Option, UNIVERSAL_TOOL_USE, obrewClient as client };
+export { AGENT_RETRIEVAL_METHOD, AUGMENTED_RETRIEVAL_METHOD, BASE_RETRIEVAL_METHOD, DEFAULT_CONVERSATION_MODE, DEFAULT_OBREW_CONFIG, DEFAULT_RETRIEVAL_METHOD, DEFAULT_TOOL_RESPONSE_MODE, DEFAULT_TOOL_USE_MODE, type I_API, type I_Attention_State, type I_BaseServiceApis, type I_ChunkMetadata, type I_Collection, type I_ConnectResponse, type I_Connection, type I_ConnectionConfig, type I_DeleteEmbeddingModelPayload, type I_DeleteTextModelReqPayload, type I_DocumentChunk, type I_DownloadEmbeddingModelPayload, type I_Endpoint, type I_GenericAPIRequestParams, type I_GenericAPIResponse, type I_GetEmbedModelInfoPayload, type I_HardwareAuditResponse, type I_HardwareInfo, type I_InferenceGenerateOptions, type I_Knowledge_State, type I_LLM_Call_Options, type I_LLM_Init_Options, type I_LLM_Options, type I_LoadTextModelRequestPayload, type I_LoadVisionModelRequest, type I_LoadedModelRes, type I_LoadedVisionModelRes, type I_Message, type I_ModelConfigs, type I_Model_State, type I_NonStreamChatbotResponse, type I_NonStreamPlayground, type I_PromptTemplates, type I_Prompt_State, type I_RAG_Strat_State, type I_Response_State, type I_ServiceApis, type I_ServicesResponse, type I_Source, type I_System_State, type I_Text_Settings, type I_Thread, type I_ToolFunctionSchemaRes, type I_ToolSchemaReqPayload, type I_Tool_Def_Parameter, type I_Tool_Definition, type I_Tool_Parameter, type I_Tools_Inference_State, type I_VisionEmbedDownloadRequest, type I_VisionEmbedDownloadResponse, type I_VisionEmbedLoadRequest, type I_VisionEmbedLoadResponse, type I_VisionEmbedModelInfo, type I_VisionEmbedQueryRequest, type I_VisionEmbedQueryResponse, type I_VisionEmbedQueryResult, type I_VisionEmbedRequest, type I_VisionEmbedResponse, type I_VisionGenerateRequest, type I_VisionGenerateResponse, type Message, ModelID, NATIVE_TOOL_USE, TOOL_RESPONSE_MODE_RESULT, type T_APIConfigOptions, type T_ConversationMode, type T_DeleteChatThreadAPIRequest, type T_EmbeddingModelConfig, type T_Endpoint, type T_GenericAPIRequest, type T_GenericDataRes, type T_GenericReqPayload, type T_GetChatThreadAPIRequest, type T_InputOptionTypes, type T_InstalledEmbeddingModel, type T_InstalledTextModel, type T_InstalledVisionEmbeddingModel, type T_LLM_InferenceOptions, type T_ModelConfig, type T_PromptTemplate, type T_SaveChatThreadAPIRequest, type T_SystemPrompt, type T_SystemPrompts, type T_TextInferenceAPIRequest, type T_ToolResponseMode, type T_ToolSchemaType, type T_ToolUseMode, type T_Tool_Param_Option, UNIVERSAL_TOOL_USE, obrewClient as client };

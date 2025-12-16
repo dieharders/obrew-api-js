@@ -61,6 +61,7 @@ export type {
   T_InstalledTextModel,
   T_EmbeddingModelConfig,
   T_InstalledEmbeddingModel,
+  T_InstalledVisionEmbeddingModel,
 } from './types'
 
 // ============================================================================
@@ -203,4 +204,25 @@ export type {
   I_DeleteEmbeddingModelPayload,
   I_GetEmbedModelInfoPayload,
   I_ServiceApis,
+} from './types'
+
+// ============================================================================
+// Type Exports - Vision Types
+// ============================================================================
+
+export type {
+  I_VisionGenerateRequest,
+  I_VisionGenerateResponse,
+  I_LoadVisionModelRequest,
+  I_LoadedVisionModelRes,
+  I_VisionEmbedLoadRequest,
+  I_VisionEmbedLoadResponse,
+  I_VisionEmbedModelInfo,
+  I_VisionEmbedRequest,
+  I_VisionEmbedResponse,
+  I_VisionEmbedDownloadRequest,
+  I_VisionEmbedDownloadResponse,
+  I_VisionEmbedQueryRequest,
+  I_VisionEmbedQueryResult,
+  I_VisionEmbedQueryResponse,
 } from './types'
