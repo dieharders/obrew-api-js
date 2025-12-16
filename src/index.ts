@@ -222,4 +222,7 @@ export type {
   I_VisionEmbedResponse,
   I_VisionEmbedDownloadRequest,
   I_VisionEmbedDownloadResponse,
+  I_VisionEmbedQueryRequest,
+  I_VisionEmbedQueryResult,
+  I_VisionEmbedQueryResponse,
 } from './types'

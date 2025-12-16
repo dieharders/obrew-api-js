@@ -1021,6 +1021,38 @@ ${str}`);
     }
   }
   /**
+   * Query an image collection using text similarity search
+   * @param options - Query options including query text, collection name, and optional top_k
+   * @returns The query results with matching images, similarity scores, and metadata
+   * @throws Error if not connected, collection not found, or query fails
+   */
+  async queryImageCollection(options) {
+    if (!this.isConnected()) {
+      throw new Error("Not connected to Obrew service");
+    }
+    try {
+      const response = await this.connection?.api?.vision?.queryImages({
+        body: options
+      });
+      if (!response) {
+        throw new Error("No response from image query");
+      }
+      if ("success" in response && !response.success) {
+        throw new Error(
+          response?.message || "Failed to query image collection"
+        );
+      }
+      console.log(
+        `${LOG_PREFIX} Image query returned ${response.data?.results?.length ?? 0} results`
+      );
+      return response.data;
+    } catch (error) {
+      this.handlePotentialConnectionError(error);
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      throw new Error(`Failed to query image collection: ${message}`);
+    }
+  }
+  /**
    * Download a vision embedding model (GGUF + mmproj) from HuggingFace
    * @param repoId - The HuggingFace repository ID
    * @param filename - The main model GGUF filename

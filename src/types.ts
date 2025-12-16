@@ -662,6 +662,31 @@ export interface I_VisionEmbedDownloadResponse {
   size: number
 }
 
+export interface I_VisionEmbedQueryRequest {
+  query: string
+  collection_name: string
+  top_k?: number
+  include_embeddings?: boolean
+}
+
+export interface I_VisionEmbedQueryResult {
+  id: string
+  distance: number | null
+  similarity_score: number | null
+  metadata: Record<string, unknown>
+  document: string | null
+  embedding?: number[]
+}
+
+export interface I_VisionEmbedQueryResponse {
+  query: string
+  collection_name: string
+  query_model: string
+  query_embedding_dim: number
+  results: I_VisionEmbedQueryResult[]
+  total_in_collection: number
+}
+
 export interface I_ServiceApis extends I_BaseServiceApis {
   /**
    * Use to query the text inference engine
@@ -783,6 +808,10 @@ export interface I_ServiceApis extends I_BaseServiceApis {
       I_VisionEmbedModelInfo
     >
     embed: T_GenericAPIRequest<I_VisionEmbedRequest, I_VisionEmbedResponse>
+    queryImages: T_GenericAPIRequest<
+      I_VisionEmbedQueryRequest,
+      I_VisionEmbedQueryResponse
+    >
     downloadEmbedModel: T_GenericAPIRequest<
       I_VisionEmbedDownloadRequest,
       I_VisionEmbedDownloadResponse
