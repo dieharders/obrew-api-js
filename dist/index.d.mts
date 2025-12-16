@@ -493,6 +493,12 @@ interface I_VisionEmbedRequest {
     image_type?: 'path' | 'base64';
     collection_name?: string;
     transcription_text?: string;
+    metadata?: {
+        file_type?: string;
+        file_name?: string;
+        file_size?: number;
+        [key: string]: unknown;
+    };
 }
 interface I_VisionEmbedResponse {
     id: string;
