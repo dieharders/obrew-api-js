@@ -469,16 +469,6 @@ interface I_LoadedVisionModelRes {
     modelName: string;
     mmprojPath: string;
 }
-interface I_DownloadMmprojRequest {
-    repo_id: string;
-    filename: string;
-    model_repo_id: string;
-}
-interface I_DownloadMmprojResponse {
-    repoId: string;
-    mmprojPath: string;
-    size: number;
-}
 interface I_VisionEmbedLoadRequest {
     model_path: string;
     mmproj_path: string;
@@ -576,7 +566,6 @@ interface I_ServiceApis extends I_BaseServiceApis {
         load: T_GenericAPIRequest<I_LoadVisionModelRequest, T_GenericDataRes>;
         unload: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>;
         model: T_GenericAPIRequest<T_GenericReqPayload, I_LoadedVisionModelRes>;
-        downloadMmproj: T_GenericAPIRequest<I_DownloadMmprojRequest, I_DownloadMmprojResponse>;
         loadEmbedModel: T_GenericAPIRequest<I_VisionEmbedLoadRequest, I_VisionEmbedLoadResponse>;
         unloadEmbedModel: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>;
         getEmbedModel: T_GenericAPIRequest<T_GenericReqPayload, I_VisionEmbedModelInfo>;
@@ -646,7 +635,6 @@ declare class ObrewClient {
     }): Promise<void>;
     unloadVisionModel(): Promise<void>;
     getLoadedVisionModel(): Promise<I_LoadedVisionModelRes | null>;
-    downloadMmproj(repoId: string, filename: string, modelRepoId: string): Promise<I_DownloadMmprojResponse>;
     loadVisionEmbedModel(options: I_VisionEmbedLoadRequest): Promise<I_VisionEmbedLoadResponse>;
     unloadVisionEmbedModel(): Promise<void>;
     getVisionEmbedModelInfo(): Promise<I_VisionEmbedModelInfo | null>;
@@ -659,4 +647,4 @@ declare const obrewClient: ObrewClient;
 
 declare const DEFAULT_OBREW_CONFIG: I_ConnectionConfig;
 
-export { AGENT_RETRIEVAL_METHOD, AUGMENTED_RETRIEVAL_METHOD, BASE_RETRIEVAL_METHOD, DEFAULT_CONVERSATION_MODE, DEFAULT_OBREW_CONFIG, DEFAULT_RETRIEVAL_METHOD, DEFAULT_TOOL_RESPONSE_MODE, DEFAULT_TOOL_USE_MODE, type I_API, type I_Attention_State, type I_BaseServiceApis, type I_ChunkMetadata, type I_Collection, type I_ConnectResponse, type I_Connection, type I_ConnectionConfig, type I_DeleteEmbeddingModelPayload, type I_DeleteTextModelReqPayload, type I_DocumentChunk, type I_DownloadEmbeddingModelPayload, type I_DownloadMmprojRequest, type I_DownloadMmprojResponse, type I_Endpoint, type I_GenericAPIRequestParams, type I_GenericAPIResponse, type I_GetEmbedModelInfoPayload, type I_HardwareAuditResponse, type I_HardwareInfo, type I_InferenceGenerateOptions, type I_Knowledge_State, type I_LLM_Call_Options, type I_LLM_Init_Options, type I_LLM_Options, type I_LoadTextModelRequestPayload, type I_LoadVisionModelRequest, type I_LoadedModelRes, type I_LoadedVisionModelRes, type I_Message, type I_ModelConfigs, type I_Model_State, type I_NonStreamChatbotResponse, type I_NonStreamPlayground, type I_PromptTemplates, type I_Prompt_State, type I_RAG_Strat_State, type I_Response_State, type I_ServiceApis, type I_ServicesResponse, type I_Source, type I_System_State, type I_Text_Settings, type I_Thread, type I_ToolFunctionSchemaRes, type I_ToolSchemaReqPayload, type I_Tool_Def_Parameter, type I_Tool_Definition, type I_Tool_Parameter, type I_Tools_Inference_State, type I_VisionEmbedDownloadRequest, type I_VisionEmbedDownloadResponse, type I_VisionEmbedLoadRequest, type I_VisionEmbedLoadResponse, type I_VisionEmbedModelInfo, type I_VisionEmbedRequest, type I_VisionEmbedResponse, type I_VisionGenerateRequest, type I_VisionGenerateResponse, type Message, ModelID, NATIVE_TOOL_USE, TOOL_RESPONSE_MODE_RESULT, type T_APIConfigOptions, type T_ConversationMode, type T_DeleteChatThreadAPIRequest, type T_EmbeddingModelConfig, type T_Endpoint, type T_GenericAPIRequest, type T_GenericDataRes, type T_GenericReqPayload, type T_GetChatThreadAPIRequest, type T_InputOptionTypes, type T_InstalledEmbeddingModel, type T_InstalledTextModel, type T_InstalledVisionEmbeddingModel, type T_LLM_InferenceOptions, type T_ModelConfig, type T_PromptTemplate, type T_SaveChatThreadAPIRequest, type T_SystemPrompt, type T_SystemPrompts, type T_TextInferenceAPIRequest, type T_ToolResponseMode, type T_ToolSchemaType, type T_ToolUseMode, type T_Tool_Param_Option, UNIVERSAL_TOOL_USE, obrewClient as client };
+export { AGENT_RETRIEVAL_METHOD, AUGMENTED_RETRIEVAL_METHOD, BASE_RETRIEVAL_METHOD, DEFAULT_CONVERSATION_MODE, DEFAULT_OBREW_CONFIG, DEFAULT_RETRIEVAL_METHOD, DEFAULT_TOOL_RESPONSE_MODE, DEFAULT_TOOL_USE_MODE, type I_API, type I_Attention_State, type I_BaseServiceApis, type I_ChunkMetadata, type I_Collection, type I_ConnectResponse, type I_Connection, type I_ConnectionConfig, type I_DeleteEmbeddingModelPayload, type I_DeleteTextModelReqPayload, type I_DocumentChunk, type I_DownloadEmbeddingModelPayload, type I_Endpoint, type I_GenericAPIRequestParams, type I_GenericAPIResponse, type I_GetEmbedModelInfoPayload, type I_HardwareAuditResponse, type I_HardwareInfo, type I_InferenceGenerateOptions, type I_Knowledge_State, type I_LLM_Call_Options, type I_LLM_Init_Options, type I_LLM_Options, type I_LoadTextModelRequestPayload, type I_LoadVisionModelRequest, type I_LoadedModelRes, type I_LoadedVisionModelRes, type I_Message, type I_ModelConfigs, type I_Model_State, type I_NonStreamChatbotResponse, type I_NonStreamPlayground, type I_PromptTemplates, type I_Prompt_State, type I_RAG_Strat_State, type I_Response_State, type I_ServiceApis, type I_ServicesResponse, type I_Source, type I_System_State, type I_Text_Settings, type I_Thread, type I_ToolFunctionSchemaRes, type I_ToolSchemaReqPayload, type I_Tool_Def_Parameter, type I_Tool_Definition, type I_Tool_Parameter, type I_Tools_Inference_State, type I_VisionEmbedDownloadRequest, type I_VisionEmbedDownloadResponse, type I_VisionEmbedLoadRequest, type I_VisionEmbedLoadResponse, type I_VisionEmbedModelInfo, type I_VisionEmbedRequest, type I_VisionEmbedResponse, type I_VisionGenerateRequest, type I_VisionGenerateResponse, type Message, ModelID, NATIVE_TOOL_USE, TOOL_RESPONSE_MODE_RESULT, type T_APIConfigOptions, type T_ConversationMode, type T_DeleteChatThreadAPIRequest, type T_EmbeddingModelConfig, type T_Endpoint, type T_GenericAPIRequest, type T_GenericDataRes, type T_GenericReqPayload, type T_GetChatThreadAPIRequest, type T_InputOptionTypes, type T_InstalledEmbeddingModel, type T_InstalledTextModel, type T_InstalledVisionEmbeddingModel, type T_LLM_InferenceOptions, type T_ModelConfig, type T_PromptTemplate, type T_SaveChatThreadAPIRequest, type T_SystemPrompt, type T_SystemPrompts, type T_TextInferenceAPIRequest, type T_ToolResponseMode, type T_ToolSchemaType, type T_ToolUseMode, type T_Tool_Param_Option, UNIVERSAL_TOOL_USE, obrewClient as client };

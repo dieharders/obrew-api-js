@@ -606,18 +606,6 @@ export interface I_LoadedVisionModelRes {
   mmprojPath: string
 }
 
-export interface I_DownloadMmprojRequest {
-  repo_id: string
-  filename: string
-  model_repo_id: string
-}
-
-export interface I_DownloadMmprojResponse {
-  repoId: string
-  mmprojPath: string
-  size: number
-}
-
 export interface I_VisionEmbedLoadRequest {
   model_path: string
   mmproj_path: string
@@ -778,10 +766,6 @@ export interface I_ServiceApis extends I_BaseServiceApis {
     load: T_GenericAPIRequest<I_LoadVisionModelRequest, T_GenericDataRes>
     unload: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
     model: T_GenericAPIRequest<T_GenericReqPayload, I_LoadedVisionModelRes>
-    downloadMmproj: T_GenericAPIRequest<
-      I_DownloadMmprojRequest,
-      I_DownloadMmprojResponse
-    >
     // Vision embedding endpoints
     loadEmbedModel: T_GenericAPIRequest<
       I_VisionEmbedLoadRequest,

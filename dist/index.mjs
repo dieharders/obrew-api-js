@@ -919,42 +919,6 @@ ${str}`);
       throw new Error(`Failed to get loaded vision model: ${message}`);
     }
   }
-  /**
-   * Download mmproj file for a vision model from HuggingFace
-   * @param repoId - The HuggingFace repository ID for the mmproj
-   * @param filename - The mmproj filename to download
-   * @param modelRepoId - The repository ID of the associated model
-   * @returns The download response with file path
-   * @throws Error if not connected or download fails
-   */
-  async downloadMmproj(repoId, filename, modelRepoId) {
-    if (!this.isConnected()) {
-      throw new Error("Not connected to Obrew service");
-    }
-    try {
-      const response = await this.connection?.api?.vision?.downloadMmproj({
-        body: {
-          repo_id: repoId,
-          filename,
-          model_repo_id: modelRepoId
-        }
-      });
-      if (!response) {
-        throw new Error("No response from mmproj download");
-      }
-      if ("success" in response && !response.success) {
-        throw new Error(
-          response?.message || "Failed to download mmproj"
-        );
-      }
-      console.log(`${LOG_PREFIX} Mmproj downloaded:`, response.data);
-      return response.data;
-    } catch (error) {
-      this.handlePotentialConnectionError(error);
-      const message = error instanceof Error ? error.message : "Unknown error occurred";
-      throw new Error(`Failed to download mmproj: ${message}`);
-    }
-  }
   // Vision Embedding Model Methods //
   /**
    * Load a vision embedding model for creating image embeddings

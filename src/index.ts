@@ -215,8 +215,6 @@ export type {
   I_VisionGenerateResponse,
   I_LoadVisionModelRequest,
   I_LoadedVisionModelRes,
-  I_DownloadMmprojRequest,
-  I_DownloadMmprojResponse,
   I_VisionEmbedLoadRequest,
   I_VisionEmbedLoadResponse,
   I_VisionEmbedModelInfo,
