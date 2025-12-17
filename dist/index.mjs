@@ -151,7 +151,6 @@ var LOG_PREFIX = "[obrew-client]";
 var ObrewClient = class {
   constructor() {
     this.hasConnected = false;
-    this.abortController = null;
     this.activeRequests = /* @__PURE__ */ new Map();
     this.connection = DEFAULT_OBREW_CONNECTION;
   }
@@ -247,10 +246,6 @@ ${config}`
     } else {
       this.activeRequests.forEach((controller) => controller.abort());
       this.activeRequests.clear();
-      if (this.abortController) {
-        this.abortController.abort();
-        this.abortController = null;
-      }
     }
   }
   /**
@@ -378,10 +373,9 @@ ${config}`
     if (!this.isConnected()) {
       throw new Error("Not connected to Obrew service");
     }
-    const reqId = requestId || `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const reqId = requestId || crypto.randomUUID();
     const abortController = new AbortController();
     this.activeRequests.set(reqId, abortController);
-    this.abortController = abortController;
     try {
       const response = await this.connection?.api?.textInference.generate({
         body: {
@@ -450,7 +444,7 @@ ${str}`);
     console.log(`${LOG_PREFIX} onStreamEvent ${eventName}`);
   }
   stopChat() {
-    this.abortController?.abort();
+    this.cancelRequest();
     this.connection?.api?.textInference.stop();
   }
   /**

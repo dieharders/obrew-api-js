@@ -609,7 +609,6 @@ interface I_ServiceApis extends I_BaseServiceApis {
 
 declare class ObrewClient {
     private hasConnected;
-    private abortController;
     private activeRequests;
     private connection;
     isConnected(): boolean;

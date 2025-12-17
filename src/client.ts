@@ -37,8 +37,7 @@ const LOG_PREFIX = '[obrew-client]'
  */
 class ObrewClient {
   private hasConnected = false
-  private abortController: AbortController | null = null
-  private activeRequests = new Map<string, AbortController>()
+  private activeRequests: Map<string, AbortController> = new Map()
   private connection: I_Connection = DEFAULT_OBREW_CONNECTION
 
   // Data Methods //
@@ -160,11 +159,6 @@ class ObrewClient {
       // Cancel all active requests
       this.activeRequests.forEach(controller => controller.abort())
       this.activeRequests.clear()
-      // Legacy support for single abortController
-      if (this.abortController) {
-        this.abortController.abort()
-        this.abortController = null
-      }
     }
   }
 
@@ -369,16 +363,11 @@ class ObrewClient {
     }
 
     // Generate unique request ID if not provided
-    const reqId =
-      requestId ||
-      `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    const reqId = requestId || crypto.randomUUID()
 
     // Create new abort controller for this specific request
     const abortController = new AbortController()
     this.activeRequests.set(reqId, abortController)
-
-    // Keep legacy single controller for backwards compatibility
-    this.abortController = abortController
 
     try {
       const response = await this.connection?.api?.textInference.generate({
@@ -483,7 +472,7 @@ class ObrewClient {
   }
 
   stopChat() {
-    this.abortController?.abort()
+    this.cancelRequest()
     this.connection?.api?.textInference.stop()
   }
 
