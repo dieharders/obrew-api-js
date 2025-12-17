@@ -38,6 +38,7 @@ const LOG_PREFIX = '[obrew-client]'
 class ObrewClient {
   private hasConnected = false
   private abortController: AbortController | null = null
+  private activeRequests = new Map<string, AbortController>()
   private connection: I_Connection = DEFAULT_OBREW_CONNECTION
 
   // Data Methods //
@@ -144,12 +145,26 @@ class ObrewClient {
   }
 
   /**
-   * Cancel ongoing request
+   * Cancel ongoing request(s)
+   * @param requestId - Optional specific request ID to cancel. If not provided, cancels all active requests.
    */
-  cancelRequest(): void {
-    if (this.abortController) {
-      this.abortController.abort()
-      this.abortController = null
+  cancelRequest(requestId?: string): void {
+    if (requestId) {
+      // Cancel specific request
+      const controller = this.activeRequests.get(requestId)
+      if (controller) {
+        controller.abort()
+        this.activeRequests.delete(requestId)
+      }
+    } else {
+      // Cancel all active requests
+      this.activeRequests.forEach(controller => controller.abort())
+      this.activeRequests.clear()
+      // Legacy support for single abortController
+      if (this.abortController) {
+        this.abortController.abort()
+        this.abortController = null
+      }
     }
   }
 
@@ -338,18 +353,32 @@ class ObrewClient {
   /**
    * Send a message and get AI response
    * Handles both streaming and non-streaming responses
+   * @param messages - Array of messages to send
+   * @param options - Optional generation options
+   * @param setEventState - Optional callback for streaming events
+   * @param requestId - Optional unique ID to track this request (for concurrent request support)
    */
   async sendMessage(
     messages: Message[],
     options?: Partial<I_InferenceGenerateOptions>,
-    setEventState?: (ev: string) => void
+    setEventState?: (ev: string) => void,
+    requestId?: string
   ): Promise<string> {
     if (!this.isConnected()) {
       throw new Error('Not connected to Obrew service')
     }
 
-    // Create new abort controller for this request
-    this.abortController = new AbortController()
+    // Generate unique request ID if not provided
+    const reqId =
+      requestId ||
+      `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+    // Create new abort controller for this specific request
+    const abortController = new AbortController()
+    this.activeRequests.set(reqId, abortController)
+
+    // Keep legacy single controller for backwards compatibility
+    this.abortController = abortController
 
     try {
       const response = await this.connection?.api?.textInference.generate({
@@ -357,7 +386,7 @@ class ObrewClient {
           messages,
           ...options,
         },
-        signal: this.abortController.signal,
+        signal: abortController.signal,
       })
 
       // Handle possible errors
@@ -410,7 +439,7 @@ class ObrewClient {
               },
               extractText: false, // Don't accumulate text, use callbacks instead
             },
-            this.abortController
+            abortController
           )
         } else {
           // Handle JSON response
@@ -430,6 +459,9 @@ class ObrewClient {
       this.handlePotentialConnectionError(error)
 
       throw error
+    } finally {
+      // Clean up the request from activeRequests
+      this.activeRequests.delete(reqId)
     }
   }
 
