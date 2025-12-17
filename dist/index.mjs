@@ -302,6 +302,13 @@ ${config}`
     const decoder = new TextDecoder("utf-8");
     let fullText = "";
     const extractText = options?.extractText ?? true;
+    const abortHandler = () => {
+      reader.cancel().catch(() => {
+      });
+    };
+    if (abortRef?.signal) {
+      abortRef.signal.addEventListener("abort", abortHandler);
+    }
     try {
       let readingBuffer = await reader.read();
       while (!readingBuffer.done && !abortRef?.signal.aborted) {
@@ -355,9 +362,14 @@ ${config}`
         await reader.cancel();
       }
     } finally {
+      if (abortRef?.signal) {
+        abortRef.signal.removeEventListener("abort", abortHandler);
+      }
       reader.releaseLock();
     }
-    await options?.onFinish?.();
+    if (!abortRef?.signal.aborted) {
+      await options?.onFinish?.();
+    }
     return fullText;
   }
   // Core API Methods //

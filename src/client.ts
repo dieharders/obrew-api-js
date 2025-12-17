@@ -251,6 +251,15 @@ class ObrewClient {
     let fullText = ''
     const extractText = options?.extractText ?? true
 
+    // Set up abort handler to cancel reader when abort signal fires
+    // This is needed because reader.read() blocks and won't respond to the signal otherwise
+    const abortHandler = () => {
+      reader.cancel().catch(() => {}) // Ignore errors on cancel
+    }
+    if (abortRef?.signal) {
+      abortRef.signal.addEventListener('abort', abortHandler)
+    }
+
     try {
       let readingBuffer = await reader.read()
 
@@ -333,11 +342,17 @@ class ObrewClient {
         await reader.cancel()
       }
     } finally {
+      // Clean up abort listener
+      if (abortRef?.signal) {
+        abortRef.signal.removeEventListener('abort', abortHandler)
+      }
       reader.releaseLock()
     }
 
-    // Call finish callback
-    await options?.onFinish?.()
+    // Call finish callback (only if not aborted)
+    if (!abortRef?.signal.aborted) {
+      await options?.onFinish?.()
+    }
 
     return fullText
   }
