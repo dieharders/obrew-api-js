@@ -269,6 +269,7 @@ interface I_Collection {
     metadata: {
         description: string;
         embedding_model: string;
+        embedding_dim: number;
         tags: string;
         icon: string;
         sources: Array<I_Source>;
