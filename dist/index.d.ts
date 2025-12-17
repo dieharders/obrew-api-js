@@ -609,7 +609,7 @@ interface I_ServiceApis extends I_BaseServiceApis {
 
 declare class ObrewClient {
     private hasConnected;
-    private abortController;
+    private activeRequests;
     private connection;
     isConnected(): boolean;
     getConnection(): I_Connection;
@@ -622,12 +622,12 @@ declare class ObrewClient {
         responseTime?: number;
         error?: string;
     }>;
-    cancelRequest(): void;
+    cancelRequest(requestId?: string): void;
     disconnect(): void;
     private handlePotentialConnectionError;
     private extractTextFromResponse;
     private handleStreamResponse;
-    sendMessage(messages: Message[], options?: Partial<I_InferenceGenerateOptions>, setEventState?: (ev: string) => void): Promise<string>;
+    sendMessage(messages: Message[], options?: Partial<I_InferenceGenerateOptions>, setEventState?: (ev: string) => void, requestId?: string): Promise<string>;
     onStreamEvent(eventName: string): void;
     stopChat(): void;
     installModel(repoId: string, filename?: string, mmprojRepoId?: string, mmprojFilename?: string): Promise<string>;

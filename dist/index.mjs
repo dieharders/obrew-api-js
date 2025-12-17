@@ -151,7 +151,7 @@ var LOG_PREFIX = "[obrew-client]";
 var ObrewClient = class {
   constructor() {
     this.hasConnected = false;
-    this.abortController = null;
+    this.activeRequests = /* @__PURE__ */ new Map();
     this.connection = DEFAULT_OBREW_CONNECTION;
   }
   // Data Methods //
@@ -233,12 +233,19 @@ ${config}`
     }
   }
   /**
-   * Cancel ongoing request
+   * Cancel ongoing request(s)
+   * @param requestId - Optional specific request ID to cancel. If not provided, cancels all active requests.
    */
-  cancelRequest() {
-    if (this.abortController) {
-      this.abortController.abort();
-      this.abortController = null;
+  cancelRequest(requestId) {
+    if (requestId) {
+      const controller = this.activeRequests.get(requestId);
+      if (controller) {
+        controller.abort();
+        this.activeRequests.delete(requestId);
+      }
+    } else {
+      this.activeRequests.forEach((controller) => controller.abort());
+      this.activeRequests.clear();
     }
   }
   /**
@@ -295,6 +302,13 @@ ${config}`
     const decoder = new TextDecoder("utf-8");
     let fullText = "";
     const extractText = options?.extractText ?? true;
+    const abortHandler = () => {
+      reader.cancel().catch(() => {
+      });
+    };
+    if (abortRef?.signal) {
+      abortRef.signal.addEventListener("abort", abortHandler);
+    }
     try {
       let readingBuffer = await reader.read();
       while (!readingBuffer.done && !abortRef?.signal.aborted) {
@@ -348,28 +362,39 @@ ${config}`
         await reader.cancel();
       }
     } finally {
+      if (abortRef?.signal) {
+        abortRef.signal.removeEventListener("abort", abortHandler);
+      }
       reader.releaseLock();
     }
-    await options?.onFinish?.();
+    if (!abortRef?.signal.aborted) {
+      await options?.onFinish?.();
+    }
     return fullText;
   }
   // Core API Methods //
   /**
    * Send a message and get AI response
    * Handles both streaming and non-streaming responses
+   * @param messages - Array of messages to send
+   * @param options - Optional generation options
+   * @param setEventState - Optional callback for streaming events
+   * @param requestId - Optional unique ID to track this request (for concurrent request support)
    */
-  async sendMessage(messages, options, setEventState) {
+  async sendMessage(messages, options, setEventState, requestId) {
     if (!this.isConnected()) {
       throw new Error("Not connected to Obrew service");
     }
-    this.abortController = new AbortController();
+    const reqId = requestId || crypto.randomUUID();
+    const abortController = new AbortController();
+    this.activeRequests.set(reqId, abortController);
     try {
       const response = await this.connection?.api?.textInference.generate({
         body: {
           messages,
           ...options
         },
-        signal: this.abortController.signal
+        signal: abortController.signal
       });
       if (!response) throw new Error("No response from AI service");
       if (typeof response === "object" && response !== null && "success" in response && response.success === false) {
@@ -406,7 +431,7 @@ ${str}`);
               extractText: false
               // Don't accumulate text, use callbacks instead
             },
-            this.abortController
+            abortController
           );
         } else {
           const data = await httpResponse.json();
@@ -420,6 +445,8 @@ ${str}`);
       }
       this.handlePotentialConnectionError(error);
       throw error;
+    } finally {
+      this.activeRequests.delete(reqId);
     }
   }
   /**
@@ -429,7 +456,7 @@ ${str}`);
     console.log(`${LOG_PREFIX} onStreamEvent ${eventName}`);
   }
   stopChat() {
-    this.abortController?.abort();
+    this.cancelRequest();
     this.connection?.api?.textInference.stop();
   }
   /**

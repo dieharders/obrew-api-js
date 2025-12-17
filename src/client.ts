@@ -37,7 +37,7 @@ const LOG_PREFIX = '[obrew-client]'
  */
 class ObrewClient {
   private hasConnected = false
-  private abortController: AbortController | null = null
+  private activeRequests: Map<string, AbortController> = new Map()
   private connection: I_Connection = DEFAULT_OBREW_CONNECTION
 
   // Data Methods //
@@ -144,12 +144,21 @@ class ObrewClient {
   }
 
   /**
-   * Cancel ongoing request
+   * Cancel ongoing request(s)
+   * @param requestId - Optional specific request ID to cancel. If not provided, cancels all active requests.
    */
-  cancelRequest(): void {
-    if (this.abortController) {
-      this.abortController.abort()
-      this.abortController = null
+  cancelRequest(requestId?: string): void {
+    if (requestId) {
+      // Cancel specific request
+      const controller = this.activeRequests.get(requestId)
+      if (controller) {
+        controller.abort()
+        this.activeRequests.delete(requestId)
+      }
+    } else {
+      // Cancel all active requests
+      this.activeRequests.forEach(controller => controller.abort())
+      this.activeRequests.clear()
     }
   }
 
@@ -242,6 +251,15 @@ class ObrewClient {
     let fullText = ''
     const extractText = options?.extractText ?? true
 
+    // Set up abort handler to cancel reader when abort signal fires
+    // This is needed because reader.read() blocks and won't respond to the signal otherwise
+    const abortHandler = () => {
+      reader.cancel().catch(() => {}) // Ignore errors on cancel
+    }
+    if (abortRef?.signal) {
+      abortRef.signal.addEventListener('abort', abortHandler)
+    }
+
     try {
       let readingBuffer = await reader.read()
 
@@ -324,11 +342,17 @@ class ObrewClient {
         await reader.cancel()
       }
     } finally {
+      // Clean up abort listener
+      if (abortRef?.signal) {
+        abortRef.signal.removeEventListener('abort', abortHandler)
+      }
       reader.releaseLock()
     }
 
-    // Call finish callback
-    await options?.onFinish?.()
+    // Call finish callback (only if not aborted)
+    if (!abortRef?.signal.aborted) {
+      await options?.onFinish?.()
+    }
 
     return fullText
   }
@@ -338,18 +362,27 @@ class ObrewClient {
   /**
    * Send a message and get AI response
    * Handles both streaming and non-streaming responses
+   * @param messages - Array of messages to send
+   * @param options - Optional generation options
+   * @param setEventState - Optional callback for streaming events
+   * @param requestId - Optional unique ID to track this request (for concurrent request support)
    */
   async sendMessage(
     messages: Message[],
     options?: Partial<I_InferenceGenerateOptions>,
-    setEventState?: (ev: string) => void
+    setEventState?: (ev: string) => void,
+    requestId?: string
   ): Promise<string> {
     if (!this.isConnected()) {
       throw new Error('Not connected to Obrew service')
     }
 
-    // Create new abort controller for this request
-    this.abortController = new AbortController()
+    // Generate unique request ID if not provided
+    const reqId = requestId || crypto.randomUUID()
+
+    // Create new abort controller for this specific request
+    const abortController = new AbortController()
+    this.activeRequests.set(reqId, abortController)
 
     try {
       const response = await this.connection?.api?.textInference.generate({
@@ -357,7 +390,7 @@ class ObrewClient {
           messages,
           ...options,
         },
-        signal: this.abortController.signal,
+        signal: abortController.signal,
       })
 
       // Handle possible errors
@@ -410,7 +443,7 @@ class ObrewClient {
               },
               extractText: false, // Don't accumulate text, use callbacks instead
             },
-            this.abortController
+            abortController
           )
         } else {
           // Handle JSON response
@@ -430,6 +463,9 @@ class ObrewClient {
       this.handlePotentialConnectionError(error)
 
       throw error
+    } finally {
+      // Clean up the request from activeRequests
+      this.activeRequests.delete(reqId)
     }
   }
 
@@ -451,7 +487,7 @@ class ObrewClient {
   }
 
   stopChat() {
-    this.abortController?.abort()
+    this.cancelRequest()
     this.connection?.api?.textInference.stop()
   }
 
