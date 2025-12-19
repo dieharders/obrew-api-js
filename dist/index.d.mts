@@ -239,6 +239,8 @@ interface I_ChunkMetadata {
     sourceId: string;
     ref_doc_id: string;
     order: number;
+    description?: string;
+    page_number?: number;
 }
 interface I_Source {
     id: string;
@@ -257,6 +259,7 @@ interface I_Source {
     description: string;
     tags: string;
     chunkIds: Array<string>;
+    source_file_id?: string;
 }
 interface I_DocumentChunk {
     text: string;
@@ -493,7 +496,7 @@ interface I_VisionEmbedRequest {
     image_base64?: string;
     image_type?: 'path' | 'base64';
     collection_name?: string;
-    transcription_text?: string;
+    description?: string;
     metadata?: {
         file_type?: string;
         file_name?: string;
