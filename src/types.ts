@@ -303,8 +303,12 @@ export interface I_ChunkMetadata {
   _node_type: string
   _node_content: any
   sourceId: string
+  source_collection_id?: string // reference to parent collection
   ref_doc_id: string
-  order: number
+  order: number // index number of chunk, @TODO Replace w/ chunk_index
+  description?: string // @TODO do we need this?
+  // PDF processing extensions
+  page_number?: number
 }
 
 export interface I_Source {
@@ -324,6 +328,8 @@ export interface I_Source {
   description: string
   tags: string
   chunkIds: Array<string>
+  // PDF processing extension
+  source_file_id?: string // Reference back to ProjectFile.id
 }
 
 export interface I_DocumentChunk {
@@ -633,7 +639,7 @@ export interface I_VisionEmbedRequest {
   image_base64?: string
   image_type?: 'path' | 'base64'
   collection_name?: string
-  transcription_text?: string
+  description?: string
   metadata?: {
     file_type?: string
     file_name?: string
@@ -646,7 +652,7 @@ export interface I_VisionEmbedResponse {
   id: string
   collection_name: string
   embedding_dim: number
-  transcription?: string
+  description?: string
   metadata?: Record<string, unknown>
 }
 
