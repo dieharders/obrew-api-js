@@ -237,6 +237,7 @@ interface I_ChunkMetadata {
     _node_type: string;
     _node_content: any;
     sourceId: string;
+    source_collection_id?: string;
     ref_doc_id: string;
     order: number;
     description?: string;

@@ -303,6 +303,7 @@ export interface I_ChunkMetadata {
   _node_type: string
   _node_content: any
   sourceId: string
+  source_collection_id?: string // reference to parent collection
   ref_doc_id: string
   order: number // index number of chunk, @TODO Replace w/ chunk_index
   description?: string // @TODO do we need this?
