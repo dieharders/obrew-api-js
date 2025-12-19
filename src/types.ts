@@ -651,7 +651,7 @@ export interface I_VisionEmbedResponse {
   id: string
   collection_name: string
   embedding_dim: number
-  transcription?: string
+  description?: string
   metadata?: Record<string, unknown>
 }
 
