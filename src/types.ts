@@ -267,6 +267,14 @@ export type T_GenericAPIRequest<ReqPayload, DataResType> = (
   props?: I_GenericAPIRequestParams<ReqPayload>
 ) => Promise<I_GenericAPIResponse<DataResType> | null>
 
+/**
+ * API request type for SSE streaming endpoints.
+ * Returns raw Response object for streaming instead of parsed JSON.
+ */
+export type T_StreamingAPIRequest<ReqPayload = T_GenericReqPayload> = (
+  props?: I_GenericAPIRequestParams<ReqPayload>
+) => Promise<Response | null>
+
 export type T_SaveChatThreadAPIRequest = (props: {
   body: {
     threadId: string
@@ -573,6 +581,25 @@ export interface I_DownloadEmbeddingModelPayload {
   filename: string
 }
 
+// Download Progress SSE Types
+export interface I_DownloadProgress {
+  task_id: string
+  repo_id: string
+  filename: string
+  downloaded_bytes: number
+  total_bytes: number
+  percent: number
+  speed_mbps: number
+  eta_seconds: number | null
+  status: 'pending' | 'downloading' | 'completed' | 'error' | 'cancelled'
+  error: string | null
+  file_path?: string | null
+}
+
+export interface I_StartDownloadResponse {
+  taskId: string
+}
+
 export interface I_DeleteEmbeddingModelPayload {
   repoId: string
 }
@@ -828,5 +855,16 @@ export interface I_ServiceApis extends I_BaseServiceApis {
       T_GenericReqPayload,
       T_InstalledVisionEmbeddingModel[]
     >
+  }
+  /**
+   * Centralized download progress and management
+   */
+  downloads: {
+    // Stream download progress via SSE (use queryParams: { task_id })
+    progress: T_StreamingAPIRequest
+    // Cancel an in-progress download (use queryParams: { task_id })
+    cancel: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
+    // Get all active downloads
+    list: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
   }
 }
