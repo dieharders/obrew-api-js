@@ -1415,7 +1415,7 @@ class ObrewClient {
     filename?: string
     mmprojRepoId?: string
     mmprojFilename?: string
-  }): Promise<{ taskId: string | null }> {
+  }): Promise<{ taskId: string | null; mmprojTaskId?: string | null }> {
     if (!this.isConnected()) {
       throw new Error('Not connected to Obrew service')
     }
@@ -1426,6 +1426,7 @@ class ObrewClient {
     try {
       let response: any
       let taskId: string | null = null
+      let mmprojTaskId: string | null = null
 
       switch (modelType) {
         case 'text': {
@@ -1443,6 +1444,7 @@ class ObrewClient {
             body,
           })
           taskId = response?.data?.taskId || null
+          mmprojTaskId = response?.data?.mmprojTaskId || null
           break
         }
 
@@ -1455,6 +1457,7 @@ class ObrewClient {
           })
           // GGUF models return taskId, transformer models complete synchronously
           taskId = response?.data?.taskId || null
+          mmprojTaskId = response?.data?.mmprojTaskId || null
           break
         }
 
@@ -1467,6 +1470,7 @@ class ObrewClient {
             },
           })
           taskId = response?.data?.taskId || null
+          mmprojTaskId = response?.data?.mmprojTaskId || null
           break
         }
       }
@@ -1476,9 +1480,9 @@ class ObrewClient {
       }
 
       console.log(
-        `${LOG_PREFIX} Download ${taskId ? `started with taskId: ${taskId}` : 'completed synchronously'}`
+        `${LOG_PREFIX} Download ${taskId ? `started with taskId: ${taskId}` : 'completed synchronously'}${mmprojTaskId ? ` (mmproj: ${mmprojTaskId})` : ''}`
       )
-      return { taskId }
+      return { taskId, mmprojTaskId }
     } catch (error) {
       this.handlePotentialConnectionError(error)
       const message =
@@ -1504,6 +1508,7 @@ class ObrewClient {
         speedMbps: number
         etaSeconds: number | null
         status: string
+        secondaryTaskId?: string | null
       }) => void
       onComplete?: (filePath?: string) => void
       onError?: (error: string) => void
@@ -1532,6 +1537,7 @@ class ObrewClient {
         speedMbps: number
         etaSeconds: number | null
         status: string
+        secondaryTaskId?: string | null
       }) => void
       onComplete?: (filePath?: string) => void
       onError?: (error: string) => void
@@ -1576,6 +1582,7 @@ class ObrewClient {
         speedMbps: number
         etaSeconds: number | null
         status: string
+        secondaryTaskId?: string | null
       }) => void
       onComplete?: (filePath?: string) => void
       onError?: (error: string) => void
@@ -1629,6 +1636,7 @@ class ObrewClient {
                 speedMbps: data.speed_mbps || 0,
                 etaSeconds: data.eta_seconds,
                 status: data.status || 'unknown',
+                secondaryTaskId: data.secondary_task_id || null,
               }
 
               callbacks.onProgress?.(progress)

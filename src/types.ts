@@ -594,10 +594,13 @@ export interface I_DownloadProgress {
   status: 'pending' | 'downloading' | 'completed' | 'error' | 'cancelled'
   error: string | null
   file_path?: string | null
+  secondary_task_id?: string | null // Linked mmproj task ID (for parallel downloads)
+  completed_at?: number | null // Timestamp for cleanup tracking
 }
 
 export interface I_StartDownloadResponse {
   taskId: string
+  mmprojTaskId?: string // Present when mmproj download started in parallel
 }
 
 export interface I_DeleteEmbeddingModelPayload {

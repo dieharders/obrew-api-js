@@ -691,6 +691,7 @@ declare class ObrewClient {
         mmprojFilename?: string;
     }): Promise<{
         taskId: string | null;
+        mmprojTaskId?: string | null;
     }>;
     subscribeToDownloadProgress(taskId: string, callbacks: {
         onProgress?: (progress: {
@@ -700,6 +701,7 @@ declare class ObrewClient {
             speedMbps: number;
             etaSeconds: number | null;
             status: string;
+            secondaryTaskId?: string | null;
         }) => void;
         onComplete?: (filePath?: string) => void;
         onError?: (error: string) => void;

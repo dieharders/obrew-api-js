@@ -1196,6 +1196,7 @@ ${str}`);
     try {
       let response;
       let taskId = null;
+      let mmprojTaskId = null;
       switch (modelType) {
         case "text": {
           const body = { repo_id: repoId };
@@ -1206,6 +1207,7 @@ ${str}`);
             body
           });
           taskId = response?.data?.taskId || null;
+          mmprojTaskId = response?.data?.mmprojTaskId || null;
           break;
         }
         case "embedding": {
@@ -1216,6 +1218,7 @@ ${str}`);
             }
           });
           taskId = response?.data?.taskId || null;
+          mmprojTaskId = response?.data?.mmprojTaskId || null;
           break;
         }
         case "vision-embedding": {
@@ -1227,6 +1230,7 @@ ${str}`);
             }
           });
           taskId = response?.data?.taskId || null;
+          mmprojTaskId = response?.data?.mmprojTaskId || null;
           break;
         }
       }
@@ -1234,9 +1238,9 @@ ${str}`);
         throw new Error(response?.message || "Failed to start download");
       }
       console.log(
-        `${LOG_PREFIX} Download ${taskId ? `started with taskId: ${taskId}` : "completed synchronously"}`
+        `${LOG_PREFIX} Download ${taskId ? `started with taskId: ${taskId}` : "completed synchronously"}${mmprojTaskId ? ` (mmproj: ${mmprojTaskId})` : ""}`
       );
-      return { taskId };
+      return { taskId, mmprojTaskId };
     } catch (error) {
       this.handlePotentialConnectionError(error);
       const message = error instanceof Error ? error.message : "Unknown error occurred";
@@ -1317,7 +1321,8 @@ ${str}`);
                 percent: data.percent || 0,
                 speedMbps: data.speed_mbps || 0,
                 etaSeconds: data.eta_seconds,
-                status: data.status || "unknown"
+                status: data.status || "unknown",
+                secondaryTaskId: data.secondary_task_id || null
               };
               callbacks.onProgress?.(progress);
               if (data.status === "completed") {
