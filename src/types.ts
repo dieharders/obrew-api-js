@@ -853,7 +853,7 @@ export interface I_ServiceApis extends I_BaseServiceApis {
       I_VisionEmbedDownloadRequest,
       I_VisionEmbedDownloadResponse
     >
-    deleteEmbedModel: T_GenericAPIRequest<{ repoId: string }, T_GenericDataRes>
+    deleteEmbedModel: T_GenericAPIRequest<{ repo_id: string }, T_GenericDataRes>
     installedEmbedModels: T_GenericAPIRequest<
       T_GenericReqPayload,
       T_InstalledVisionEmbeddingModel[]

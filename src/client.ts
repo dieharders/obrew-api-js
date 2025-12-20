@@ -1334,7 +1334,7 @@ class ObrewClient {
     try {
       const response = await this.connection?.api?.vision?.deleteEmbedModel({
         body: {
-          repoId,
+          repo_id: repoId,
         },
       })
 
