@@ -210,6 +210,7 @@ interface I_GenericAPIRequestParams<Payload> {
     signal?: AbortSignal;
 }
 type T_GenericAPIRequest<ReqPayload, DataResType> = (props?: I_GenericAPIRequestParams<ReqPayload>) => Promise<I_GenericAPIResponse<DataResType> | null>;
+type T_StreamingAPIRequest<ReqPayload = T_GenericReqPayload> = (props?: I_GenericAPIRequestParams<ReqPayload>) => Promise<Response | null>;
 type T_SaveChatThreadAPIRequest = (props: {
     body: {
         threadId: string;
@@ -606,9 +607,14 @@ interface I_ServiceApis extends I_BaseServiceApis {
         queryImages: T_GenericAPIRequest<I_VisionEmbedQueryRequest, I_VisionEmbedQueryResponse>;
         downloadEmbedModel: T_GenericAPIRequest<I_VisionEmbedDownloadRequest, I_VisionEmbedDownloadResponse>;
         deleteEmbedModel: T_GenericAPIRequest<{
-            repoId: string;
+            repo_id: string;
         }, T_GenericDataRes>;
         installedEmbedModels: T_GenericAPIRequest<T_GenericReqPayload, T_InstalledVisionEmbeddingModel[]>;
+    };
+    downloads: {
+        progress: T_StreamingAPIRequest;
+        cancel: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>;
+        list: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>;
     };
 }
 
@@ -677,6 +683,33 @@ declare class ObrewClient {
     installVisionEmbedModel(repoId: string, filename: string, mmprojFilename: string): Promise<I_VisionEmbedDownloadResponse>;
     deleteVisionEmbedModel(repoId: string): Promise<void>;
     getInstalledVisionEmbedModels(): Promise<T_InstalledVisionEmbeddingModel[]>;
+    startDownload(options: {
+        modelType: 'text' | 'embedding' | 'vision-embedding';
+        repoId: string;
+        filename?: string;
+        mmprojRepoId?: string;
+        mmprojFilename?: string;
+    }): Promise<{
+        taskId: string | null;
+        mmprojTaskId?: string | null;
+    }>;
+    subscribeToDownloadProgress(taskId: string, callbacks: {
+        onProgress?: (progress: {
+            downloadedBytes: number;
+            totalBytes: number;
+            percent: number;
+            speedMbps: number;
+            etaSeconds: number | null;
+            status: string;
+            secondaryTaskId?: string | null;
+        }) => void;
+        onComplete?: (filePath?: string) => void;
+        onError?: (error: string) => void;
+        onCancel?: () => void;
+    }): AbortController;
+    private startDownloadProgressStream;
+    private streamDownloadProgress;
+    cancelDownload(taskId: string): Promise<void>;
 }
 declare const obrewClient: ObrewClient;
 

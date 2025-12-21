@@ -1334,7 +1334,7 @@ class ObrewClient {
     try {
       const response = await this.connection?.api?.vision?.deleteEmbedModel({
         body: {
-          repoId,
+          repo_id: repoId,
         },
       })
 
@@ -1396,6 +1396,303 @@ class ObrewClient {
       const message =
         error instanceof Error ? error.message : 'Unknown error occurred'
       throw new Error(`Failed to get installed vision embed models: ${message}`)
+    }
+  }
+
+  // ==========================================================================
+  // Async Download Methods with SSE Progress Tracking
+  // ==========================================================================
+
+  /**
+   * Unified method to start an async download of any model type with progress tracking.
+   * Routes to the appropriate backend endpoint based on modelType.
+   * @param options - Download options
+   * @returns Object with taskId for tracking progress (null for sync transformer models)
+   */
+  async startDownload(options: {
+    modelType: 'text' | 'embedding' | 'vision-embedding'
+    repoId: string
+    filename?: string
+    mmprojRepoId?: string
+    mmprojFilename?: string
+  }): Promise<{ taskId: string | null; mmprojTaskId?: string | null }> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    const { modelType, repoId, filename, mmprojRepoId, mmprojFilename } =
+      options
+
+    try {
+      let response: any
+      let taskId: string | null = null
+      let mmprojTaskId: string | null = null
+
+      switch (modelType) {
+        case 'text': {
+          const body: {
+            repo_id: string
+            filename?: string
+            mmproj_repo_id?: string
+            mmproj_filename?: string
+          } = { repo_id: repoId }
+          if (filename) body.filename = filename
+          if (mmprojRepoId) body.mmproj_repo_id = mmprojRepoId
+          if (mmprojFilename) body.mmproj_filename = mmprojFilename
+
+          response = await this.connection?.api?.textInference.download({
+            body,
+          })
+          taskId = response?.data?.taskId || null
+          mmprojTaskId = response?.data?.mmprojTaskId || null
+          break
+        }
+
+        case 'embedding': {
+          response = await this.connection?.api?.memory.downloadEmbedModel({
+            body: {
+              repo_id: repoId,
+              filename: filename || '',
+            },
+          })
+          // GGUF models return taskId, transformer models complete synchronously
+          taskId = response?.data?.taskId || null
+          mmprojTaskId = response?.data?.mmprojTaskId || null
+          break
+        }
+
+        case 'vision-embedding': {
+          response = await this.connection?.api?.vision?.downloadEmbedModel({
+            body: {
+              repo_id: repoId,
+              filename: filename || '',
+              mmproj_filename: mmprojFilename || '',
+            },
+          })
+          taskId = response?.data?.taskId || null
+          mmprojTaskId = response?.data?.mmprojTaskId || null
+          break
+        }
+      }
+
+      if (response?.success === false) {
+        throw new Error(response?.message || 'Failed to start download')
+      }
+
+      console.log(
+        `${LOG_PREFIX} Download ${taskId ? `started with taskId: ${taskId}` : 'completed synchronously'}${mmprojTaskId ? ` (mmproj: ${mmprojTaskId})` : ''}`
+      )
+      return { taskId, mmprojTaskId }
+    } catch (error) {
+      this.handlePotentialConnectionError(error)
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to start download: ${message}`)
+    }
+  }
+
+  /**
+   * Subscribe to download progress via SSE
+   * Uses the centralized /v1/downloads/progress endpoint (works for all model types)
+   * @param taskId - The task ID from startModelDownload/startEmbeddingModelDownload/startVisionEmbedModelDownload
+   * @param callbacks - Progress callbacks
+   * @returns AbortController to cancel the subscription
+   */
+  subscribeToDownloadProgress(
+    taskId: string,
+    callbacks: {
+      onProgress?: (progress: {
+        downloadedBytes: number
+        totalBytes: number
+        percent: number
+        speedMbps: number
+        etaSeconds: number | null
+        status: string
+        secondaryTaskId?: string | null
+      }) => void
+      onComplete?: (filePath?: string) => void
+      onError?: (error: string) => void
+      onCancel?: () => void
+    }
+  ): AbortController {
+    const abortController = new AbortController()
+
+    // Use API service pattern for centralized downloads endpoint
+    this.startDownloadProgressStream(taskId, abortController, callbacks)
+
+    return abortController
+  }
+
+  /**
+   * Internal method to start the SSE progress stream using API service pattern
+   */
+  private async startDownloadProgressStream(
+    taskId: string,
+    abortController: AbortController,
+    callbacks: {
+      onProgress?: (progress: {
+        downloadedBytes: number
+        totalBytes: number
+        percent: number
+        speedMbps: number
+        etaSeconds: number | null
+        status: string
+        secondaryTaskId?: string | null
+      }) => void
+      onComplete?: (filePath?: string) => void
+      onError?: (error: string) => void
+      onCancel?: () => void
+    }
+  ): Promise<void> {
+    try {
+      // Use API service to get the SSE response (typed as Response via T_StreamingAPIRequest)
+      const response = await this.connection?.api?.downloads.progress({
+        queryParams: { task_id: taskId },
+        signal: abortController.signal,
+      })
+
+      if (!response) {
+        callbacks.onError?.('No response from progress endpoint')
+        return
+      }
+
+      await this.streamDownloadProgress(response, abortController, callbacks)
+    } catch (error) {
+      if ((error as Error).name === 'AbortError') {
+        callbacks.onCancel?.()
+      } else {
+        const message = error instanceof Error ? error.message : 'Unknown error'
+        callbacks.onError?.(message)
+      }
+    }
+  }
+
+  /**
+   * Internal method to stream download progress via SSE
+   * @param response - The Response object from the API service
+   */
+  private async streamDownloadProgress(
+    response: Response,
+    abortController: AbortController,
+    callbacks: {
+      onProgress?: (progress: {
+        downloadedBytes: number
+        totalBytes: number
+        percent: number
+        speedMbps: number
+        etaSeconds: number | null
+        status: string
+        secondaryTaskId?: string | null
+      }) => void
+      onComplete?: (filePath?: string) => void
+      onError?: (error: string) => void
+      onCancel?: () => void
+    }
+  ): Promise<void> {
+    try {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error('No reader available for SSE response')
+      }
+
+      const decoder = new TextDecoder()
+
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { done, value } = await reader.read()
+
+        if (done || abortController.signal.aborted) {
+          break
+        }
+
+        const chunk = decoder.decode(value, { stream: true })
+        const lines = chunk.split('\n')
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6).trim()
+            if (dataStr === '[DONE]') {
+              break
+            }
+
+            try {
+              const data = JSON.parse(dataStr)
+
+              // Check for error event
+              if (data.error) {
+                callbacks.onError?.(data.error)
+                return
+              }
+
+              // Map snake_case to camelCase for callbacks
+              const progress = {
+                downloadedBytes: data.downloaded_bytes || 0,
+                totalBytes: data.total_bytes || 0,
+                percent: data.percent || 0,
+                speedMbps: data.speed_mbps || 0,
+                etaSeconds: data.eta_seconds,
+                status: data.status || 'unknown',
+                secondaryTaskId: data.secondary_task_id || null,
+              }
+
+              callbacks.onProgress?.(progress)
+
+              // Handle terminal states
+              if (data.status === 'completed') {
+                callbacks.onComplete?.(data.file_path)
+                return
+              } else if (data.status === 'error') {
+                callbacks.onError?.(data.error || 'Download failed')
+                return
+              } else if (data.status === 'cancelled') {
+                callbacks.onCancel?.()
+                return
+              }
+            } catch {
+              // Ignore JSON parse errors for incomplete chunks
+            }
+          }
+        }
+      }
+    } catch (error) {
+      if ((error as Error).name === 'AbortError') {
+        callbacks.onCancel?.()
+      } else {
+        const message = error instanceof Error ? error.message : 'Unknown error'
+        callbacks.onError?.(message)
+      }
+    }
+  }
+
+  /**
+   * Cancel an in-progress download
+   * Uses the centralized /v1/downloads endpoint (works for all model types)
+   * @param taskId - The task ID to cancel
+   */
+  async cancelDownload(taskId: string): Promise<void> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      // Use API service pattern for centralized downloads endpoint
+      const response = await this.connection?.api?.downloads.cancel({
+        queryParams: { task_id: taskId },
+      })
+
+      if (response?.success === false) {
+        throw new Error(response?.message || 'Failed to cancel download')
+      }
+
+      console.log(`${LOG_PREFIX} Download cancelled: ${taskId}`)
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to cancel download: ${message}`)
     }
   }
 }
