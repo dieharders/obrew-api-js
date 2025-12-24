@@ -571,6 +571,23 @@ export interface I_DeleteTextModelReqPayload {
   filename: string
 }
 
+export interface I_WipeAllModelsResponse {
+  success: boolean
+  message: string
+  data: {
+    freed_space_total: string
+    freed_space_breakdown: {
+      text_models: string
+      embedding_models: string
+      vision_embedding_models: string
+    }
+    caches_cleared: number
+    metadata_files_reset: number
+    errors: string[]
+    warnings: string[]
+  }
+}
+
 export interface I_ToolSchemaReqPayload {
   filename: string
   tool_name: string
@@ -743,6 +760,10 @@ export interface I_ServiceApis extends I_BaseServiceApis {
     getModelInfo: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
     download: T_GenericAPIRequest<T_GenericReqPayload, string>
     delete: T_GenericAPIRequest<I_DeleteTextModelReqPayload, T_GenericDataRes>
+    wipeModels: T_GenericAPIRequest<
+      T_GenericReqPayload,
+      I_WipeAllModelsResponse
+    >
     getModelConfigs: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
     auditHardware: T_GenericAPIRequest<T_GenericReqPayload, I_HardwareInfo[]>
     // getPromptTemplates: T_GenericAPIRequest<
