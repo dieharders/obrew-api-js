@@ -19,6 +19,7 @@ import {
   I_VisionEmbedQueryResponse,
   I_LLM_Init_Options,
   I_LLM_Call_Options,
+  I_WipeAllModelsResponse,
 } from './types'
 import {
   DEFAULT_OBREW_CONNECTION,
@@ -786,6 +787,37 @@ class ObrewClient {
       const message =
         error instanceof Error ? error.message : 'Unknown error occurred'
       throw new Error(`Failed to audit hardware: ${message}`)
+    }
+  }
+
+  /**
+   * Wipe all installed models (text, embedding, vision) and clear caches
+   * @returns Information about freed space and cleared caches
+   * @throws Error if not connected or wipe fails
+   */
+  async wipeAllModels(): Promise<I_WipeAllModelsResponse> {
+    if (!this.isConnected()) {
+      throw new Error('Not connected to Obrew service')
+    }
+
+    try {
+      const response = await this.connection?.api?.textInference.wipeModels({})
+
+      if (!response) {
+        throw new Error('No response from wipe models')
+      }
+
+      if (response.success === false) {
+        throw new Error(response.message || 'Failed to wipe models')
+      }
+
+      console.log(`${LOG_PREFIX} All models wiped:`, response.data)
+      return response.data
+    } catch (error) {
+      this.handlePotentialConnectionError(error)
+      const message =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      throw new Error(`Failed to wipe all models: ${message}`)
     }
   }
 

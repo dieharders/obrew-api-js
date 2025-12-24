@@ -575,7 +575,7 @@ interface I_ServiceApis extends I_BaseServiceApis {
         getModelInfo: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>;
         download: T_GenericAPIRequest<T_GenericReqPayload, string>;
         delete: T_GenericAPIRequest<I_DeleteTextModelReqPayload, T_GenericDataRes>;
-        wipe: T_GenericAPIRequest<T_GenericReqPayload, I_WipeAllModelsResponse>;
+        wipeModels: T_GenericAPIRequest<T_GenericReqPayload, I_WipeAllModelsResponse>;
         getModelConfigs: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>;
         auditHardware: T_GenericAPIRequest<T_GenericReqPayload, I_HardwareInfo[]>;
     };
@@ -672,6 +672,7 @@ declare class ObrewClient {
     getAgentConfig(botName: string): Promise<I_Text_Settings | null>;
     deleteAgentConfig(botName: string): Promise<I_Text_Settings[]>;
     auditHardware(): Promise<I_HardwareInfo[]>;
+    wipeAllModels(): Promise<I_WipeAllModelsResponse>;
     installEmbeddingModel(repoId: string, filename: string): Promise<string>;
     getInstalledEmbeddingModels(): Promise<T_InstalledEmbeddingModel[]>;
     getAvailableEmbeddingModels(): Promise<T_EmbeddingModelConfig[]>;
