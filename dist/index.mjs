@@ -582,7 +582,7 @@ ${str}`);
   /**
    * Get currently loaded model info
    * @returns The loaded model data, or null if no model is loaded
-   * @throws Error if not connected or request fails
+   * @throws Error if not connected
    */
   async getLoadedModel() {
     if (!this.isConnected()) {
@@ -592,8 +592,11 @@ ${str}`);
       const response = await this.connection?.api?.textInference.model();
       return response?.data || null;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error occurred";
-      throw new Error(`Failed to get loaded model: ${message}`);
+      console.warn(
+        `${LOG_PREFIX} No model currently loaded, backend returned:
+${error}`
+      );
+      return null;
     }
   }
   /**
