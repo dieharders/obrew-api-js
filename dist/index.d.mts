@@ -515,6 +515,7 @@ interface I_VisionEmbedRequest {
     image_type?: 'path' | 'base64';
     collection_name?: string;
     description?: string;
+    repo_id?: string;
     metadata?: {
         file_type?: string;
         file_name?: string;
