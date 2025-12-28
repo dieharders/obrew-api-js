@@ -687,6 +687,7 @@ export interface I_VisionEmbedRequest {
   image_type?: 'path' | 'base64'
   collection_name?: string
   description?: string
+  repo_id?: string // Model repo ID from frontend settings
   metadata?: {
     file_type?: string
     file_name?: string
