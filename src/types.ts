@@ -782,9 +782,8 @@ export interface I_WebSearchRequest {
 // File System Search
 export interface I_FileSystemSearchRequest {
   query: string
-  directory: string
-  allowed_directories: string[]
-  file_patterns: string[]
+  directories: string[]
+  file_patterns?: string[]
   max_files_preview?: number
   max_files_parse?: number
   auto_expand?: boolean
