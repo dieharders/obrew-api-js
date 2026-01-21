@@ -742,6 +742,73 @@ export interface I_VisionEmbedQueryResponse {
   total_in_collection: number
 }
 
+// ============================================================================
+// Search Types
+// ============================================================================
+
+export interface I_SearchResult {
+  id: string
+  content: string
+  score: number
+  metadata?: Record<string, unknown>
+}
+
+export interface I_SearchResponse {
+  results: I_SearchResult[]
+  query: string
+  total_results: number
+  search_time_ms?: number
+}
+
+// Vector Search
+export interface I_VectorSearchRequest {
+  query: string
+  collections?: string[]
+  top_k?: number
+  max_preview?: number
+  max_extract?: number
+  auto_expand?: boolean
+}
+
+// Web Search
+export interface I_WebSearchRequest {
+  query: string
+  website?: string
+  max_pages?: number
+  max_preview?: number
+  max_extract?: number
+}
+
+// File System Search
+export interface I_FileSystemSearchRequest {
+  query: string
+  directory: string
+  allowed_directories: string[]
+  file_patterns: string[]
+  max_files_preview?: number
+  max_files_parse?: number
+  auto_expand?: boolean
+}
+
+// Structured Data Search
+export interface I_StructuredSearchRequest {
+  query: string
+  items: Array<{
+    id: string
+    content: string
+    metadata?: Record<string, unknown>
+  }>
+  group_by?: string
+  max_preview?: number
+  max_extract?: number
+  auto_expand?: boolean
+}
+
+// Stop Search
+export interface I_StopSearchRequest {
+  search_id?: string
+}
+
 export interface I_ServiceApis extends I_BaseServiceApis {
   /**
    * Use to query the text inference engine
@@ -891,5 +958,20 @@ export interface I_ServiceApis extends I_BaseServiceApis {
     cancel: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
     // Get all active downloads
     list: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>
+  }
+  /**
+   * Agentic search across various data sources
+   */
+  search: {
+    // Stop a running search by ID or all searches
+    stop: T_GenericAPIRequest<I_StopSearchRequest, T_GenericDataRes>
+    // Vector/embedding search across ChromaDB collections
+    vector: T_GenericAPIRequest<I_VectorSearchRequest, T_GenericDataRes>
+    // Web search using DuckDuckGo
+    web: T_GenericAPIRequest<I_WebSearchRequest, T_GenericDataRes>
+    // File system search
+    fs: T_GenericAPIRequest<I_FileSystemSearchRequest, T_GenericDataRes>
+    // Structured data search (ephemeral data passed in request)
+    structured: T_GenericAPIRequest<I_StructuredSearchRequest, T_GenericDataRes>
   }
 }
