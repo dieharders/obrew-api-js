@@ -786,6 +786,7 @@ export interface I_FileSystemSearchRequest {
   file_patterns?: string[]
   max_files_preview?: number
   max_files_parse?: number
+  max_iterations?: number
   auto_expand?: boolean
 }
 
