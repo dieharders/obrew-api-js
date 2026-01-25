@@ -1399,6 +1399,128 @@ ${error}`
       throw new Error(`Failed to cancel download: ${message}`);
     }
   }
+  // ============================================================================
+  // Search Methods
+  // ============================================================================
+  /**
+   * Perform a vector/embedding search across ChromaDB collections
+   * @param options - Vector search options
+   * @returns Search results with relevance scores
+   * @throws Error if not connected or search fails
+   */
+  async vectorSearch(options) {
+    if (!this.isConnected()) {
+      throw new Error("Not connected to Obrew service");
+    }
+    try {
+      const response = await this.connection?.api?.search.vector({
+        body: options
+      });
+      if (response?.success === false) {
+        throw new Error(response?.message || "Vector search failed");
+      }
+      return response?.data;
+    } catch (error) {
+      this.handlePotentialConnectionError(error);
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      throw new Error(`Failed to perform vector search: ${message}`);
+    }
+  }
+  /**
+   * Perform a web search using DuckDuckGo
+   * @param options - Web search options
+   * @returns Web search results
+   * @throws Error if not connected or search fails
+   */
+  async webSearch(options) {
+    if (!this.isConnected()) {
+      throw new Error("Not connected to Obrew service");
+    }
+    try {
+      const response = await this.connection?.api?.search.web({
+        body: options
+      });
+      if (response?.success === false) {
+        throw new Error(response?.message || "Web search failed");
+      }
+      return response?.data;
+    } catch (error) {
+      this.handlePotentialConnectionError(error);
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      throw new Error(`Failed to perform web search: ${message}`);
+    }
+  }
+  /**
+   * Perform a file system search
+   * @param options - File system search options
+   * @returns File search results
+   * @throws Error if not connected or search fails
+   */
+  async fileSystemSearch(options) {
+    if (!this.isConnected()) {
+      throw new Error("Not connected to Obrew service");
+    }
+    try {
+      const response = await this.connection?.api?.search.fs({
+        body: options
+      });
+      if (response?.success === false) {
+        throw new Error(response?.message || "File system search failed");
+      }
+      return response?.data;
+    } catch (error) {
+      this.handlePotentialConnectionError(error);
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      throw new Error(`Failed to perform file system search: ${message}`);
+    }
+  }
+  /**
+   * Perform a structured data search on ephemeral data
+   * @param options - Structured search options with items to search
+   * @returns Search results
+   * @throws Error if not connected or search fails
+   */
+  async structuredSearch(options) {
+    if (!this.isConnected()) {
+      throw new Error("Not connected to Obrew service");
+    }
+    try {
+      const response = await this.connection?.api?.search.structured({
+        body: options
+      });
+      if (response?.success === false) {
+        throw new Error(response?.message || "Structured search failed");
+      }
+      return response?.data;
+    } catch (error) {
+      this.handlePotentialConnectionError(error);
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      throw new Error(`Failed to perform structured search: ${message}`);
+    }
+  }
+  /**
+   * Stop a running search by ID or stop all searches
+   * @param searchId - Optional search ID to stop (stops all if omitted)
+   * @throws Error if not connected or stop fails
+   */
+  async stopSearch(searchId) {
+    if (!this.isConnected()) {
+      throw new Error("Not connected to Obrew service");
+    }
+    try {
+      const response = await this.connection?.api?.search.stop({
+        body: { search_id: searchId }
+      });
+      if (response?.success === false) {
+        throw new Error(response?.message || "Failed to stop search");
+      }
+      console.log(`${LOG_PREFIX} Search stopped: ${searchId || "all searches"}`);
+    } catch (error) {
+      this.handlePotentialConnectionError(error);
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      throw new Error(`Failed to stop search: ${message}`);
+    }
+  }
 };
 var obrewClient = new ObrewClient();
 

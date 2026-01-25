@@ -563,6 +563,57 @@ interface I_VisionEmbedQueryResponse {
     results: I_VisionEmbedQueryResult[];
     total_in_collection: number;
 }
+interface I_SearchResult {
+    id: string;
+    content: string;
+    score: number;
+    metadata?: Record<string, unknown>;
+}
+interface I_SearchResponse {
+    results: I_SearchResult[];
+    query: string;
+    total_results: number;
+    search_time_ms?: number;
+}
+interface I_VectorSearchRequest {
+    query: string;
+    collections?: string[];
+    top_k?: number;
+    max_preview?: number;
+    max_extract?: number;
+    auto_expand?: boolean;
+}
+interface I_WebSearchRequest {
+    query: string;
+    website?: string;
+    max_pages?: number;
+    max_preview?: number;
+    max_extract?: number;
+}
+interface I_FileSystemSearchRequest {
+    query: string;
+    directories: string[];
+    file_patterns?: string[];
+    max_files_preview?: number;
+    max_files_parse?: number;
+    max_iterations?: number;
+    auto_expand?: boolean;
+}
+interface I_StructuredSearchRequest {
+    query: string;
+    items: Array<{
+        id: string;
+        content: string;
+        metadata?: Record<string, unknown>;
+    }>;
+    group_by?: string;
+    max_preview?: number;
+    max_extract?: number;
+    auto_expand?: boolean;
+}
+interface I_StopSearchRequest {
+    search_id?: string;
+}
 interface I_ServiceApis extends I_BaseServiceApis {
     textInference: {
         generate: T_TextInferenceAPIRequest;
@@ -633,6 +684,13 @@ interface I_ServiceApis extends I_BaseServiceApis {
         progress: T_StreamingAPIRequest;
         cancel: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>;
         list: T_GenericAPIRequest<T_GenericReqPayload, T_GenericDataRes>;
+    };
+    search: {
+        stop: T_GenericAPIRequest<I_StopSearchRequest, T_GenericDataRes>;
+        vector: T_GenericAPIRequest<I_VectorSearchRequest, T_GenericDataRes>;
+        web: T_GenericAPIRequest<I_WebSearchRequest, T_GenericDataRes>;
+        fs: T_GenericAPIRequest<I_FileSystemSearchRequest, T_GenericDataRes>;
+        structured: T_GenericAPIRequest<I_StructuredSearchRequest, T_GenericDataRes>;
     };
 }
 
@@ -729,6 +787,11 @@ declare class ObrewClient {
     private startDownloadProgressStream;
     private streamDownloadProgress;
     cancelDownload(taskId: string): Promise<void>;
+    vectorSearch(options: I_VectorSearchRequest): Promise<I_SearchResponse>;
+    webSearch(options: I_WebSearchRequest): Promise<I_SearchResponse>;
+    fileSystemSearch(options: I_FileSystemSearchRequest): Promise<I_SearchResponse>;
+    structuredSearch(options: I_StructuredSearchRequest): Promise<I_SearchResponse>;
+    stopSearch(searchId?: string): Promise<void>;
 }
 declare const obrewClient: ObrewClient;
 
