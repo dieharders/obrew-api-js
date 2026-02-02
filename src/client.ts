@@ -1542,13 +1542,27 @@ class ObrewClient {
     taskId: string,
     callbacks: {
       onProgress?: (progress: {
-        downloadedBytes: number
-        totalBytes: number
-        percent: number
-        speedMbps: number
-        etaSeconds: number | null
-        status: string
+        primaryTaskId: string
         secondaryTaskId?: string | null
+        status: string
+        primaryFileDone?: boolean | null
+        secondaryFileDone?: boolean | null
+        primaryProgress: {
+          downloadedBytes: number
+          totalBytes: number
+          percent: number
+          speedMbps: number
+          etaSeconds: number | null
+          status: string
+        }
+        secondaryProgress?: {
+          downloadedBytes: number
+          totalBytes: number
+          percent: number
+          speedMbps: number
+          etaSeconds: number | null
+          status: string
+        } | null
       }) => void
       onComplete?: (filePath?: string) => void
       onError?: (error: string) => void
@@ -1571,13 +1585,27 @@ class ObrewClient {
     abortController: AbortController,
     callbacks: {
       onProgress?: (progress: {
-        downloadedBytes: number
-        totalBytes: number
-        percent: number
-        speedMbps: number
-        etaSeconds: number | null
-        status: string
+        primaryTaskId: string
         secondaryTaskId?: string | null
+        status: string
+        primaryFileDone?: boolean | null
+        secondaryFileDone?: boolean | null
+        primaryProgress: {
+          downloadedBytes: number
+          totalBytes: number
+          percent: number
+          speedMbps: number
+          etaSeconds: number | null
+          status: string
+        }
+        secondaryProgress?: {
+          downloadedBytes: number
+          totalBytes: number
+          percent: number
+          speedMbps: number
+          etaSeconds: number | null
+          status: string
+        } | null
       }) => void
       onComplete?: (filePath?: string) => void
       onError?: (error: string) => void
@@ -1616,13 +1644,27 @@ class ObrewClient {
     abortController: AbortController,
     callbacks: {
       onProgress?: (progress: {
-        downloadedBytes: number
-        totalBytes: number
-        percent: number
-        speedMbps: number
-        etaSeconds: number | null
-        status: string
+        primaryTaskId: string
         secondaryTaskId?: string | null
+        status: string
+        primaryFileDone?: boolean | null
+        secondaryFileDone?: boolean | null
+        primaryProgress: {
+          downloadedBytes: number
+          totalBytes: number
+          percent: number
+          speedMbps: number
+          etaSeconds: number | null
+          status: string
+        }
+        secondaryProgress?: {
+          downloadedBytes: number
+          totalBytes: number
+          percent: number
+          speedMbps: number
+          etaSeconds: number | null
+          status: string
+        } | null
       }) => void
       onComplete?: (filePath?: string) => void
       onError?: (error: string) => void
@@ -1670,13 +1712,32 @@ class ObrewClient {
 
               // Map snake_case to camelCase for callbacks
               const progress = {
-                downloadedBytes: data.downloaded_bytes || 0,
-                totalBytes: data.total_bytes || 0,
-                percent: data.percent || 0,
-                speedMbps: data.speed_mbps || 0,
-                etaSeconds: data.eta_seconds,
-                status: data.status || 'unknown',
+                primaryTaskId: data.task_id,
                 secondaryTaskId: data.secondary_task_id || null,
+                status: data.status || 'unknown',
+                primaryFileDone: data.primary_file_done ?? null,
+                secondaryFileDone: data.secondary_file_done ?? null,
+                // Map primary_progress object
+                primaryProgress: {
+                  downloadedBytes: data.primary_progress?.downloaded_bytes || 0,
+                  totalBytes: data.primary_progress?.total_bytes || 0,
+                  percent: data.primary_progress?.percent || 0,
+                  speedMbps: data.primary_progress?.speed_mbps || 0,
+                  etaSeconds: data.primary_progress?.eta_seconds ?? null,
+                  status: data.primary_progress?.status || 'unknown',
+                },
+                // Map secondary_progress object if present
+                secondaryProgress: data.secondary_progress
+                  ? {
+                      downloadedBytes:
+                        data.secondary_progress.downloaded_bytes || 0,
+                      totalBytes: data.secondary_progress.total_bytes || 0,
+                      percent: data.secondary_progress.percent || 0,
+                      speedMbps: data.secondary_progress.speed_mbps || 0,
+                      etaSeconds: data.secondary_progress.eta_seconds,
+                      status: data.secondary_progress.status || 'unknown',
+                    }
+                  : null,
               }
 
               callbacks.onProgress?.(progress)
