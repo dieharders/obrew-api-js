@@ -772,13 +772,27 @@ declare class ObrewClient {
     }>;
     subscribeToDownloadProgress(taskId: string, callbacks: {
         onProgress?: (progress: {
-            downloadedBytes: number;
-            totalBytes: number;
-            percent: number;
-            speedMbps: number;
-            etaSeconds: number | null;
-            status: string;
+            primaryTaskId: string;
             secondaryTaskId?: string | null;
+            status: string;
+            primaryFileDone?: boolean | null;
+            secondaryFileDone?: boolean | null;
+            primaryProgress: {
+                downloadedBytes: number;
+                totalBytes: number;
+                percent: number;
+                speedMbps: number;
+                etaSeconds: number | null;
+                status: string;
+            };
+            secondaryProgress?: {
+                downloadedBytes: number;
+                totalBytes: number;
+                percent: number;
+                speedMbps: number;
+                etaSeconds: number | null;
+                status: string;
+            } | null;
         }) => void;
         onComplete?: (filePath?: string) => void;
         onError?: (error: string) => void;
