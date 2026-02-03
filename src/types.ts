@@ -774,7 +774,6 @@ export interface I_VectorSearchRequest {
 export interface I_WebSearchRequest {
   query: string
   website?: string
-  max_pages?: number
   max_preview?: number
   max_read?: number
 }
