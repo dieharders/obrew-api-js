@@ -586,7 +586,6 @@ interface I_VectorSearchRequest {
 interface I_WebSearchRequest {
     query: string;
     website?: string;
-    max_pages?: number;
     max_preview?: number;
     max_read?: number;
 }
