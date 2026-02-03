@@ -580,22 +580,21 @@ interface I_VectorSearchRequest {
     collections?: string[];
     top_k?: number;
     max_preview?: number;
-    max_extract?: number;
+    max_read?: number;
     auto_expand?: boolean;
 }
 interface I_WebSearchRequest {
     query: string;
     website?: string;
-    max_pages?: number;
     max_preview?: number;
-    max_extract?: number;
+    max_read?: number;
 }
 interface I_FileSystemSearchRequest {
     query: string;
     directories: string[];
     file_patterns?: string[];
-    max_files_preview?: number;
-    max_files_parse?: number;
+    max_preview?: number;
+    max_read?: number;
     max_iterations?: number;
     auto_expand?: boolean;
 }
@@ -608,7 +607,7 @@ interface I_StructuredSearchRequest {
     }>;
     group_by?: string;
     max_preview?: number;
-    max_extract?: number;
+    max_read?: number;
     auto_expand?: boolean;
 }
 interface I_StopSearchRequest {
