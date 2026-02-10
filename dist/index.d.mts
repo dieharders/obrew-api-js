@@ -563,17 +563,20 @@ interface I_VisionEmbedQueryResponse {
     results: I_VisionEmbedQueryResult[];
     total_in_collection: number;
 }
-interface I_SearchResult {
+interface I_SearchSource {
     id: string;
-    content: string;
-    score: number;
-    metadata?: Record<string, unknown>;
+    type: string;
+    name: string;
+    snippet?: string;
 }
 interface I_SearchResponse {
-    results: I_SearchResult[];
+    answer: string;
+    sources: I_SearchSource[];
     query: string;
+    search_type: string;
     total_results: number;
-    search_time_ms?: number;
+    stats?: Record<string, unknown>;
+    tool_logs?: Array<Record<string, unknown>>;
 }
 interface I_VectorSearchRequest {
     query: string;
