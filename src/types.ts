@@ -191,6 +191,8 @@ export interface I_InferenceGenerateOptions extends T_LLM_InferenceOptions {
   tools?: string[]
   similarity_top_k?: number
   strategy?: T_ResponseStrategy
+  // Contextual data items injected into backend tool functions (e.g. pre-fetched emails)
+  context_items?: Array<Record<string, unknown>>
 }
 export type T_LLM_InferenceOptions = I_LLM_Call_Options & I_LLM_Init_Options
 

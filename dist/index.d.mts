@@ -146,6 +146,7 @@ interface I_InferenceGenerateOptions extends T_LLM_InferenceOptions {
     tools?: string[];
     similarity_top_k?: number;
     strategy?: T_ResponseStrategy;
+    context_items?: Array<Record<string, unknown>>;
 }
 type T_LLM_InferenceOptions = I_LLM_Call_Options & I_LLM_Init_Options;
 interface I_LoadTextModelRequestPayload {
