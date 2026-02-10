@@ -748,18 +748,21 @@ export interface I_VisionEmbedQueryResponse {
 // Search Types
 // ============================================================================
 
-export interface I_SearchResult {
+export interface I_SearchSource {
   id: string
-  content: string
-  score: number
-  metadata?: Record<string, unknown>
+  type: string
+  name: string
+  snippet?: string
 }
 
 export interface I_SearchResponse {
-  results: I_SearchResult[]
+  answer: string
+  sources: I_SearchSource[]
   query: string
+  search_type: string
   total_results: number
-  search_time_ms?: number
+  stats?: Record<string, unknown>
+  tool_logs?: Array<Record<string, unknown>>
 }
 
 // Vector Search
