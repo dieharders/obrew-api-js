@@ -1515,6 +1515,30 @@ ${error}`
     }
   }
   /**
+   * Perform an agentic email search on email data from MS Graph API
+   * @param options - Email search options with raw email objects
+   * @returns Search results
+   * @throws Error if not connected or search fails
+   */
+  async emailSearch(options) {
+    if (!this.isConnected()) {
+      throw new Error("Not connected to Obrew service");
+    }
+    try {
+      const response = await this.connection?.api?.search.email({
+        body: options
+      });
+      if (response?.success === false) {
+        throw new Error(response?.message || "Email search failed");
+      }
+      return response?.data;
+    } catch (error) {
+      this.handlePotentialConnectionError(error);
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      throw new Error(`Failed to perform email search: ${message}`);
+    }
+  }
+  /**
    * Stop a running search by ID or stop all searches
    * @param searchId - Optional search ID to stop (stops all if omitted)
    * @throws Error if not connected or stop fails
