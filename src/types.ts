@@ -808,6 +808,15 @@ export interface I_StructuredSearchRequest {
   auto_expand?: boolean
 }
 
+// Email Search
+export interface I_EmailSearchRequest {
+  query: string
+  emails: Array<Record<string, unknown>>
+  max_preview?: number
+  max_read?: number
+  auto_expand?: boolean
+}
+
 // Stop Search
 export interface I_StopSearchRequest {
   search_id?: string
@@ -977,5 +986,7 @@ export interface I_ServiceApis extends I_BaseServiceApis {
     fs: T_GenericAPIRequest<I_FileSystemSearchRequest, T_GenericDataRes>
     // Structured data search (ephemeral data passed in request)
     structured: T_GenericAPIRequest<I_StructuredSearchRequest, T_GenericDataRes>
+    // Email search (email data from MS Graph passed in request)
+    email: T_GenericAPIRequest<I_EmailSearchRequest, T_GenericDataRes>
   }
 }
