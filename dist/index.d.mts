@@ -614,6 +614,13 @@ interface I_StructuredSearchRequest {
     max_read?: number;
     auto_expand?: boolean;
 }
+interface I_EmailSearchRequest {
+    query: string;
+    emails: Array<Record<string, unknown>>;
+    max_preview?: number;
+    max_read?: number;
+    auto_expand?: boolean;
+}
 interface I_StopSearchRequest {
     search_id?: string;
 }
@@ -694,6 +701,7 @@ interface I_ServiceApis extends I_BaseServiceApis {
         web: T_GenericAPIRequest<I_WebSearchRequest, T_GenericDataRes>;
         fs: T_GenericAPIRequest<I_FileSystemSearchRequest, T_GenericDataRes>;
         structured: T_GenericAPIRequest<I_StructuredSearchRequest, T_GenericDataRes>;
+        email: T_GenericAPIRequest<I_EmailSearchRequest, T_GenericDataRes>;
     };
 }
 
@@ -808,6 +816,7 @@ declare class ObrewClient {
     webSearch(options: I_WebSearchRequest): Promise<I_SearchResponse>;
     fileSystemSearch(options: I_FileSystemSearchRequest): Promise<I_SearchResponse>;
     structuredSearch(options: I_StructuredSearchRequest): Promise<I_SearchResponse>;
+    emailSearch(options: I_EmailSearchRequest): Promise<I_SearchResponse>;
     stopSearch(searchId?: string): Promise<void>;
 }
 declare const obrewClient: ObrewClient;
