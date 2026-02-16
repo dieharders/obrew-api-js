@@ -817,6 +817,26 @@ export interface I_EmailSearchRequest {
   auto_expand?: boolean
 }
 
+// SharePoint Search
+export interface I_SharePointSearchItem {
+  id: string
+  name: string
+  content: string
+  web_url?: string
+  mime_type?: string
+  drive_id?: string
+  last_modified?: string
+  last_modified_by?: string
+}
+
+export interface I_SharePointSearchRequest {
+  query: string
+  items: I_SharePointSearchItem[]
+  max_preview?: number
+  max_read?: number
+  auto_expand?: boolean
+}
+
 // Stop Search
 export interface I_StopSearchRequest {
   search_id?: string
@@ -988,5 +1008,7 @@ export interface I_ServiceApis extends I_BaseServiceApis {
     structured: T_GenericAPIRequest<I_StructuredSearchRequest, T_GenericDataRes>
     // Email search (email data from MS Graph passed in request)
     email: T_GenericAPIRequest<I_EmailSearchRequest, T_GenericDataRes>
+    // SharePoint file search (file data from MS Graph passed in request)
+    sharepoint: T_GenericAPIRequest<I_SharePointSearchRequest, T_GenericDataRes>
   }
 }
