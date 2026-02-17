@@ -621,6 +621,23 @@ interface I_EmailSearchRequest {
     max_read?: number;
     auto_expand?: boolean;
 }
+interface I_SharePointSearchItem {
+    id: string;
+    name: string;
+    content: string;
+    web_url?: string;
+    mime_type?: string;
+    drive_id?: string;
+    last_modified?: string;
+    last_modified_by?: string;
+}
+interface I_SharePointSearchRequest {
+    query: string;
+    items: I_SharePointSearchItem[];
+    max_preview?: number;
+    max_read?: number;
+    auto_expand?: boolean;
+}
 interface I_StopSearchRequest {
     search_id?: string;
 }
@@ -702,6 +719,7 @@ interface I_ServiceApis extends I_BaseServiceApis {
         fs: T_GenericAPIRequest<I_FileSystemSearchRequest, T_GenericDataRes>;
         structured: T_GenericAPIRequest<I_StructuredSearchRequest, T_GenericDataRes>;
         email: T_GenericAPIRequest<I_EmailSearchRequest, T_GenericDataRes>;
+        sharepoint: T_GenericAPIRequest<I_SharePointSearchRequest, T_GenericDataRes>;
     };
 }
 
@@ -817,6 +835,7 @@ declare class ObrewClient {
     fileSystemSearch(options: I_FileSystemSearchRequest): Promise<I_SearchResponse>;
     structuredSearch(options: I_StructuredSearchRequest): Promise<I_SearchResponse>;
     emailSearch(options: I_EmailSearchRequest): Promise<I_SearchResponse>;
+    sharePointSearch(options: I_SharePointSearchRequest): Promise<I_SearchResponse>;
     stopSearch(searchId?: string): Promise<void>;
 }
 declare const obrewClient: ObrewClient;

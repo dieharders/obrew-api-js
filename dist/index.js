@@ -1539,6 +1539,30 @@ ${error}`
     }
   }
   /**
+   * Perform an agentic search over SharePoint file data from MS Graph API
+   * @param options - SharePoint search options with file items
+   * @returns Search results
+   * @throws Error if not connected or search fails
+   */
+  async sharePointSearch(options) {
+    if (!this.isConnected()) {
+      throw new Error("Not connected to Obrew service");
+    }
+    try {
+      const response = await this.connection?.api?.search.sharepoint({
+        body: options
+      });
+      if (response?.success === false) {
+        throw new Error(response?.message || "SharePoint search failed");
+      }
+      return response?.data;
+    } catch (error) {
+      this.handlePotentialConnectionError(error);
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
+      throw new Error(`Failed to perform SharePoint search: ${message}`);
+    }
+  }
+  /**
    * Stop a running search by ID or stop all searches
    * @param searchId - Optional search ID to stop (stops all if omitted)
    * @throws Error if not connected or stop fails
