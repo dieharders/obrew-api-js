@@ -126,6 +126,7 @@ export interface I_Response_State {
   tfs_z?: number
   mirostat_tau?: number
   grammar?: string
+  seed?: number
 }
 
 export interface I_LLM_Call_Options extends I_Response_State {
