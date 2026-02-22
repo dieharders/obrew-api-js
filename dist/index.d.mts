@@ -100,6 +100,7 @@ interface I_Response_State {
     tfs_z?: number;
     mirostat_tau?: number;
     grammar?: string;
+    seed?: number;
 }
 interface I_LLM_Call_Options extends I_Response_State {
     prompt?: string;
