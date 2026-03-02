@@ -1322,16 +1322,20 @@ ${error}`
         throw new Error("No reader available for SSE response");
       }
       const decoder = new TextDecoder();
+      let lineBuffer = "";
       while (true) {
         const { done, value } = await reader.read();
         if (done || abortController.signal.aborted) {
           break;
         }
         const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
+        const text = lineBuffer + chunk;
+        const lines = text.split("\n");
+        lineBuffer = lines.pop() ?? "";
         for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const dataStr = line.slice(6).trim();
+          const trimmedLine = line.replace(/\r$/, "");
+          if (trimmedLine.startsWith("data: ")) {
+            const dataStr = trimmedLine.slice(6).trim();
             if (dataStr === "[DONE]") {
               break;
             }

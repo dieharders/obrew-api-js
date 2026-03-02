@@ -1684,6 +1684,8 @@ class ObrewClient {
       }
 
       const decoder = new TextDecoder()
+      // Buffer for partial lines split across TCP chunks
+      let lineBuffer = ''
 
       // eslint-disable-next-line no-constant-condition
       while (true) {
@@ -1694,11 +1696,16 @@ class ObrewClient {
         }
 
         const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n')
+        // Prepend any leftover partial line from the previous chunk
+        const text = lineBuffer + chunk
+        const lines = text.split('\n')
+        // The last element may be an incomplete line — save it for next iteration
+        lineBuffer = lines.pop() ?? ''
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const dataStr = line.slice(6).trim()
+          const trimmedLine = line.replace(/\r$/, '')
+          if (trimmedLine.startsWith('data: ')) {
+            const dataStr = trimmedLine.slice(6).trim()
             if (dataStr === '[DONE]') {
               break
             }
