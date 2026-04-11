@@ -127,6 +127,10 @@ export interface I_Response_State {
   mirostat_tau?: number
   grammar?: string
   seed?: number
+  // Reasoning/thinking-mode controls (Qwen3, QwQ, DeepSeek-R1, ...)
+  // Only meaningful for models the backend has tagged "reasoning".
+  enable_thinking?: boolean
+  reasoning_budget?: number
 }
 
 export interface I_LLM_Call_Options extends I_Response_State {
@@ -194,6 +198,11 @@ export interface I_InferenceGenerateOptions extends T_LLM_InferenceOptions {
   strategy?: T_ResponseStrategy
   // Contextual data items injected into backend tool functions (e.g. pre-fetched emails)
   context_items?: Array<Record<string, unknown>>
+  // Reasoning/thinking-mode controls (Qwen3, QwQ, DeepSeek-R1, ...)
+  // When undefined, backend leaves the chat template default in place.
+  enable_thinking?: boolean
+  // -1 unlimited, 0 disabled, N token cap
+  reasoning_budget?: number
 }
 export type T_LLM_InferenceOptions = I_LLM_Call_Options & I_LLM_Init_Options
 
