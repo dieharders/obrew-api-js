@@ -383,7 +383,7 @@ ${config}`
    * @param setEventState - Optional callback for streaming events
    * @param requestId - Optional unique ID to track this request (for concurrent request support)
    */
-  async sendMessage(messages, options, setEventState, requestId) {
+  async sendMessage(messages, options, setEventState, requestId, streamCallbacks) {
     if (!this.isConnected()) {
       throw new Error("Not connected to Obrew service");
     }
@@ -409,18 +409,48 @@ ${config}`
         const httpResponse = response;
         const contentType = httpResponse.headers.get("content-type");
         if (contentType?.includes("event-stream")) {
-          return await this.handleStreamResponse(
+          let lastEvent = "";
+          let accumulatedContent = "";
+          let accumulatedReasoning = "";
+          const streamed = await this.handleStreamResponse(
             httpResponse,
             {
               onData: (res) => {
-                console.log(`onData:
-${res}`);
+                try {
+                  const parsed = JSON.parse(res);
+                  const data = parsed?.data;
+                  if (!data) return;
+                  if (lastEvent === "GENERATING_REASONING") {
+                    const text = data.text ?? "";
+                    if (text) {
+                      accumulatedReasoning += text;
+                      streamCallbacks?.onReasoningToken?.(text);
+                    }
+                  } else if (lastEvent === "GENERATING_TOKENS") {
+                    const text = data.text ?? "";
+                    if (text) {
+                      accumulatedContent += text;
+                      streamCallbacks?.onToken?.(text);
+                    }
+                  } else if (lastEvent === "GENERATING_CONTENT") {
+                    const text = data.text ?? "";
+                    const reasoning = data.reasoning;
+                    accumulatedContent = text || accumulatedContent;
+                    if (reasoning) accumulatedReasoning = reasoning;
+                    streamCallbacks?.onFinalContent?.({
+                      text: accumulatedContent,
+                      reasoning: accumulatedReasoning || void 0
+                    });
+                  }
+                } catch {
+                }
               },
               onFinish: async () => {
                 console.log(`${LOG_PREFIX} stream finished!`);
                 return;
               },
               onEvent: async (str) => {
+                lastEvent = str;
                 this.onStreamEvent(str);
                 const displayEventStr = str.replace(/_/g, " ") + "...";
                 if (str) setEventState?.(displayEventStr);
@@ -435,6 +465,7 @@ ${str}`);
             },
             abortController
           );
+          return accumulatedContent || streamed;
         } else {
           const data = await httpResponse.json();
           return this.extractTextFromResponse(data);

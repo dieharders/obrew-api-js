@@ -101,6 +101,8 @@ interface I_Response_State {
     mirostat_tau?: number;
     grammar?: string;
     seed?: number;
+    enable_thinking?: boolean;
+    reasoning_budget?: number;
 }
 interface I_LLM_Call_Options extends I_Response_State {
     prompt?: string;
@@ -148,6 +150,8 @@ interface I_InferenceGenerateOptions extends T_LLM_InferenceOptions {
     similarity_top_k?: number;
     strategy?: T_ResponseStrategy;
     context_items?: Array<Record<string, unknown>>;
+    enable_thinking?: boolean;
+    reasoning_budget?: number;
 }
 type T_LLM_InferenceOptions = I_LLM_Call_Options & I_LLM_Init_Options;
 interface I_LoadTextModelRequestPayload {
@@ -744,7 +748,14 @@ declare class ObrewClient {
     private handlePotentialConnectionError;
     private extractTextFromResponse;
     private handleStreamResponse;
-    sendMessage(messages: Message[], options?: Partial<I_InferenceGenerateOptions>, setEventState?: (ev: string) => void, requestId?: string): Promise<string>;
+    sendMessage(messages: Message[], options?: Partial<I_InferenceGenerateOptions>, setEventState?: (ev: string) => void, requestId?: string, streamCallbacks?: {
+        onToken?: (text: string) => void;
+        onReasoningToken?: (text: string) => void;
+        onFinalContent?: (payload: {
+            text: string;
+            reasoning?: string;
+        }) => void;
+    }): Promise<string>;
     onStreamEvent(eventName: string): void;
     stopChat(): void;
     installModel(repoId: string, filename?: string, mmprojRepoId?: string, mmprojFilename?: string): Promise<string>;
