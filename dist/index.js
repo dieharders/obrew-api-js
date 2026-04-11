@@ -434,9 +434,9 @@ ${config}`
                     }
                   } else if (lastEvent === "GENERATING_CONTENT") {
                     const text = data.text ?? "";
-                    const reasoning = data.reasoning;
+                    const reasoning2 = data.reasoning;
                     accumulatedContent = text || accumulatedContent;
-                    if (reasoning) accumulatedReasoning = reasoning;
+                    if (reasoning2) accumulatedReasoning = reasoning2;
                     streamCallbacks?.onFinalContent?.({
                       text: accumulatedContent,
                       reasoning: accumulatedReasoning || void 0
@@ -468,8 +468,20 @@ ${str}`);
           return accumulatedContent || streamed;
         } else {
           const data = await httpResponse.json();
+          const reasoning2 = data && typeof data === "object" && data.reasoning || void 0;
+          if (reasoning2) {
+            const text = this.extractTextFromResponse(data);
+            streamCallbacks?.onFinalContent?.({ text, reasoning: reasoning2 });
+            return text;
+          }
           return this.extractTextFromResponse(data);
         }
+      }
+      const reasoning = response && typeof response === "object" && response.reasoning || void 0;
+      if (reasoning) {
+        const text = this.extractTextFromResponse(response);
+        streamCallbacks?.onFinalContent?.({ text, reasoning });
+        return text;
       }
       return this.extractTextFromResponse(response);
     } catch (error) {
