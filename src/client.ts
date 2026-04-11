@@ -505,13 +505,36 @@ class ObrewClient {
           // Fall back to whatever handleStreamResponse aggregated.
           return accumulatedContent || streamed
         } else {
-          // Handle JSON response
+          // Handle JSON response (non-streaming /generate path).
+          // The backend's read_event_data() returns the GENERATING_CONTENT
+          // payload's `data` field directly, which now includes a `reasoning`
+          // field for reasoning-capable models. extractTextFromResponse only
+          // pulls out `text`, so we sniff `reasoning` here and dispatch it
+          // through the same callback the streaming path uses.
           const data = await httpResponse.json()
+          const reasoning =
+            (data && typeof data === 'object' && (data as any).reasoning) ||
+            undefined
+          if (reasoning) {
+            const text = this.extractTextFromResponse(data)
+            streamCallbacks?.onFinalContent?.({ text, reasoning })
+            return text
+          }
           return this.extractTextFromResponse(data)
         }
       }
 
-      // Handle structured response objects
+      // Handle structured response objects (also check for reasoning).
+      const reasoning =
+        (response &&
+          typeof response === 'object' &&
+          (response as any).reasoning) ||
+        undefined
+      if (reasoning) {
+        const text = this.extractTextFromResponse(response)
+        streamCallbacks?.onFinalContent?.({ text, reasoning })
+        return text
+      }
       return this.extractTextFromResponse(response)
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
