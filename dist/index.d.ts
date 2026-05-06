@@ -732,6 +732,7 @@ declare class ObrewClient {
     private hasConnected;
     private activeRequests;
     private connection;
+    lastReasoning: string | null;
     isConnected(): boolean;
     getConnection(): I_Connection;
     connect({ config, signal, }: {

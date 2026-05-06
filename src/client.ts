@@ -47,6 +47,8 @@ class ObrewClient {
   private hasConnected = false
   private activeRequests: Map<string, AbortController> = new Map()
   private connection: I_Connection = DEFAULT_OBREW_CONNECTION
+  /** Reasoning text from the most recent sendMessage call. Read after await. */
+  public lastReasoning: string | null = null
 
   // Data Methods //
 
@@ -515,6 +517,7 @@ class ObrewClient {
           const reasoning =
             (data && typeof data === 'object' && (data as any).reasoning) ||
             undefined
+          this.lastReasoning = reasoning ?? null
           if (reasoning) {
             const text = this.extractTextFromResponse(data)
             streamCallbacks?.onFinalContent?.({ text, reasoning })
@@ -530,6 +533,7 @@ class ObrewClient {
           typeof response === 'object' &&
           (response as any).reasoning) ||
         undefined
+      this.lastReasoning = reasoning ?? null
       if (reasoning) {
         const text = this.extractTextFromResponse(response)
         streamCallbacks?.onFinalContent?.({ text, reasoning })

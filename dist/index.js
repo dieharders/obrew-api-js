@@ -155,6 +155,8 @@ var ObrewClient = class {
     this.hasConnected = false;
     this.activeRequests = /* @__PURE__ */ new Map();
     this.connection = DEFAULT_OBREW_CONNECTION;
+    /** Reasoning text from the most recent sendMessage call. Read after await. */
+    this.lastReasoning = null;
   }
   // Data Methods //
   /**
@@ -469,6 +471,7 @@ ${str}`);
         } else {
           const data = await httpResponse.json();
           const reasoning2 = data && typeof data === "object" && data.reasoning || void 0;
+          this.lastReasoning = reasoning2 ?? null;
           if (reasoning2) {
             const text = this.extractTextFromResponse(data);
             streamCallbacks?.onFinalContent?.({ text, reasoning: reasoning2 });
@@ -478,6 +481,7 @@ ${str}`);
         }
       }
       const reasoning = response && typeof response === "object" && response.reasoning || void 0;
+      this.lastReasoning = reasoning ?? null;
       if (reasoning) {
         const text = this.extractTextFromResponse(response);
         streamCallbacks?.onFinalContent?.({ text, reasoning });
