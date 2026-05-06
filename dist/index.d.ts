@@ -754,7 +754,7 @@ declare class ObrewClient {
         onReasoningToken?: (text: string) => void;
         onFinalContent?: (payload: {
             text: string;
-            reasoning?: string;
+            reasoningText?: string;
         }) => void;
     }): Promise<string>;
     onStreamEvent(eventName: string): void;

@@ -434,12 +434,12 @@ ${config}`
                     }
                   } else if (lastEvent === "GENERATING_CONTENT") {
                     const text = data.text ?? "";
-                    const reasoning2 = data.reasoning;
+                    const reasoningText2 = data.reasoningText;
                     accumulatedContent = text || accumulatedContent;
-                    if (reasoning2) accumulatedReasoning = reasoning2;
+                    if (reasoningText2) accumulatedReasoning = reasoningText2;
                     streamCallbacks?.onFinalContent?.({
                       text: accumulatedContent,
-                      reasoning: accumulatedReasoning || void 0
+                      reasoningText: accumulatedReasoning || void 0
                     });
                   }
                 } catch {
@@ -468,21 +468,21 @@ ${str}`);
           return accumulatedContent || streamed;
         } else {
           const data = await httpResponse.json();
-          const reasoning2 = data && typeof data === "object" && data.reasoning || void 0;
-          this.lastReasoning = reasoning2 ?? null;
-          if (reasoning2) {
+          const reasoningText2 = data && typeof data === "object" && data.reasoningText || void 0;
+          this.lastReasoning = reasoningText2 ?? null;
+          if (reasoningText2) {
             const text = this.extractTextFromResponse(data);
-            streamCallbacks?.onFinalContent?.({ text, reasoning: reasoning2 });
+            streamCallbacks?.onFinalContent?.({ text, reasoningText: reasoningText2 });
             return text;
           }
           return this.extractTextFromResponse(data);
         }
       }
-      const reasoning = response && typeof response === "object" && response.reasoning || void 0;
-      this.lastReasoning = reasoning ?? null;
-      if (reasoning) {
+      const reasoningText = response && typeof response === "object" && response.reasoningText || void 0;
+      this.lastReasoning = reasoningText ?? null;
+      if (reasoningText) {
         const text = this.extractTextFromResponse(response);
-        streamCallbacks?.onFinalContent?.({ text, reasoning });
+        streamCallbacks?.onFinalContent?.({ text, reasoningText });
         return text;
       }
       return this.extractTextFromResponse(response);

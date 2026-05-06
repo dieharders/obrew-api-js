@@ -389,7 +389,10 @@ class ObrewClient {
       // Only populated when the backend separates delta.reasoning_content
       // (requires --reasoning-format deepseek on llama-server, set automatically
       // for models tagged with "reasoning").
-      onFinalContent?: (payload: { text: string; reasoning?: string }) => void
+      onFinalContent?: (payload: {
+        text: string
+        reasoningText?: string
+      }) => void
     }
   ): Promise<string> {
     if (!this.isConnected()) {
@@ -473,12 +476,14 @@ class ObrewClient {
                     // May include an optional `reasoning` field when the model
                     // emitted delta.reasoning_content during streaming.
                     const text = data.text ?? ''
-                    const reasoning = data.reasoning as string | undefined
+                    const reasoningText = data.reasoningText as
+                      | string
+                      | undefined
                     accumulatedContent = text || accumulatedContent
-                    if (reasoning) accumulatedReasoning = reasoning
+                    if (reasoningText) accumulatedReasoning = reasoningText
                     streamCallbacks?.onFinalContent?.({
                       text: accumulatedContent,
-                      reasoning: accumulatedReasoning || undefined,
+                      reasoningText: accumulatedReasoning || undefined,
                     })
                   }
                 } catch {
@@ -514,13 +519,13 @@ class ObrewClient {
           // pulls out `text`, so we sniff `reasoning` here and dispatch it
           // through the same callback the streaming path uses.
           const data = await httpResponse.json()
-          const reasoning =
-            (data && typeof data === 'object' && (data as any).reasoning) ||
+          const reasoningText =
+            (data && typeof data === 'object' && (data as any).reasoningText) ||
             undefined
-          this.lastReasoning = reasoning ?? null
-          if (reasoning) {
+          this.lastReasoning = reasoningText ?? null
+          if (reasoningText) {
             const text = this.extractTextFromResponse(data)
-            streamCallbacks?.onFinalContent?.({ text, reasoning })
+            streamCallbacks?.onFinalContent?.({ text, reasoningText })
             return text
           }
           return this.extractTextFromResponse(data)
@@ -528,15 +533,15 @@ class ObrewClient {
       }
 
       // Handle structured response objects (also check for reasoning).
-      const reasoning =
+      const reasoningText =
         (response &&
           typeof response === 'object' &&
-          (response as any).reasoning) ||
+          (response as any).reasoningText) ||
         undefined
-      this.lastReasoning = reasoning ?? null
-      if (reasoning) {
+      this.lastReasoning = reasoningText ?? null
+      if (reasoningText) {
         const text = this.extractTextFromResponse(response)
-        streamCallbacks?.onFinalContent?.({ text, reasoning })
+        streamCallbacks?.onFinalContent?.({ text, reasoningText })
         return text
       }
       return this.extractTextFromResponse(response)
