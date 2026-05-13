@@ -47,6 +47,8 @@ class ObrewClient {
   private hasConnected = false
   private activeRequests: Map<string, AbortController> = new Map()
   private connection: I_Connection = DEFAULT_OBREW_CONNECTION
+  /** Reasoning text from the most recent sendMessage call. Read after await. */
+  public lastReasoning: string | null = null
 
   // Data Methods //
 
@@ -379,7 +381,18 @@ class ObrewClient {
     messages: Message[],
     options?: Partial<I_InferenceGenerateOptions>,
     setEventState?: (ev: string) => void,
-    requestId?: string
+    requestId?: string,
+    streamCallbacks?: {
+      onToken?: (text: string) => void
+      onReasoningToken?: (text: string) => void
+      // Fired once with the final aggregated content + reasoning (if any).
+      // Only populated when the backend separates delta.reasoning_content
+      // (requires --reasoning-format deepseek on llama-server).
+      onFinalContent?: (payload: {
+        text: string
+        reasoningText?: string
+      }) => void
+    }
   ): Promise<string> {
     if (!this.isConnected()) {
       throw new Error('Not connected to Obrew service')
@@ -429,18 +442,59 @@ class ObrewClient {
         const httpResponse = response as Response
         const contentType = httpResponse.headers.get('content-type')
         if (contentType?.includes('event-stream')) {
-          // Handle streaming response
-          return await this.handleStreamResponse(
+          // Handle streaming response.
+          // Backend emits SSE events where each data: JSON payload is preceded
+          // by an event: line naming the kind (GENERATING_TOKENS, GENERATING_REASONING,
+          // or GENERATING_CONTENT). We track the most recent event and route the
+          // following data chunk to the matching callback.
+          let lastEvent = ''
+          let accumulatedContent = ''
+          let accumulatedReasoning = ''
+          const streamed = await this.handleStreamResponse(
             httpResponse,
             {
               onData: (res: string) => {
-                console.log(`onData:\n${res}`)
+                try {
+                  const parsed = JSON.parse(res)
+                  const data = parsed?.data
+                  if (!data) return
+                  if (lastEvent === 'GENERATING_REASONING') {
+                    const text = data.text ?? ''
+                    if (text) {
+                      accumulatedReasoning += text
+                      streamCallbacks?.onReasoningToken?.(text)
+                    }
+                  } else if (lastEvent === 'GENERATING_TOKENS') {
+                    const text = data.text ?? ''
+                    if (text) {
+                      accumulatedContent += text
+                      streamCallbacks?.onToken?.(text)
+                    }
+                  } else if (lastEvent === 'GENERATING_CONTENT') {
+                    // Final aggregated payload from backend content_payload().
+                    // May include an optional `reasoning` field when the model
+                    // emitted delta.reasoning_content during streaming.
+                    const text = data.text ?? ''
+                    const reasoningText = data.reasoningText as
+                      | string
+                      | undefined
+                    accumulatedContent = text || accumulatedContent
+                    if (reasoningText) accumulatedReasoning = reasoningText
+                    streamCallbacks?.onFinalContent?.({
+                      text: accumulatedContent,
+                      reasoningText: accumulatedReasoning || undefined,
+                    })
+                  }
+                } catch {
+                  // Non-JSON data line; ignore.
+                }
               },
               onFinish: async () => {
                 console.log(`${LOG_PREFIX} stream finished!`)
                 return
               },
               onEvent: async (str: string) => {
+                lastEvent = str
                 this.onStreamEvent(str)
                 const displayEventStr = str.replace(/_/g, ' ') + '...'
                 if (str) setEventState?.(displayEventStr)
@@ -453,14 +507,42 @@ class ObrewClient {
             },
             abortController
           )
+          // Prefer callback-accumulated content (it strips reasoning correctly).
+          // Fall back to whatever handleStreamResponse aggregated.
+          return accumulatedContent || streamed
         } else {
-          // Handle JSON response
+          // Handle JSON response (non-streaming /generate path).
+          // The backend's read_event_data() returns the GENERATING_CONTENT
+          // payload's `data` field directly, which now includes a `reasoning`
+          // field for reasoning-capable models. extractTextFromResponse only
+          // pulls out `text`, so we sniff `reasoning` here and dispatch it
+          // through the same callback the streaming path uses.
           const data = await httpResponse.json()
+          const reasoningText =
+            (data && typeof data === 'object' && (data as any).reasoningText) ||
+            undefined
+          this.lastReasoning = reasoningText ?? null
+          if (reasoningText) {
+            const text = this.extractTextFromResponse(data)
+            streamCallbacks?.onFinalContent?.({ text, reasoningText })
+            return text
+          }
           return this.extractTextFromResponse(data)
         }
       }
 
-      // Handle structured response objects
+      // Handle structured response objects (also check for reasoning).
+      const reasoningText =
+        (response &&
+          typeof response === 'object' &&
+          (response as any).reasoningText) ||
+        undefined
+      this.lastReasoning = reasoningText ?? null
+      if (reasoningText) {
+        const text = this.extractTextFromResponse(response)
+        streamCallbacks?.onFinalContent?.({ text, reasoningText })
+        return text
+      }
       return this.extractTextFromResponse(response)
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -485,6 +567,8 @@ class ObrewClient {
       case 'FEEDING_PROMPT':
         break
       case 'GENERATING_TOKENS':
+        break
+      case 'GENERATING_REASONING':
         break
       case 'GENERATING_CONTENT':
         break

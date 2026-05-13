@@ -153,6 +153,8 @@ var ObrewClient = class {
     this.hasConnected = false;
     this.activeRequests = /* @__PURE__ */ new Map();
     this.connection = DEFAULT_OBREW_CONNECTION;
+    /** Reasoning text from the most recent sendMessage call. Read after await. */
+    this.lastReasoning = null;
   }
   // Data Methods //
   /**
@@ -381,7 +383,7 @@ ${config}`
    * @param setEventState - Optional callback for streaming events
    * @param requestId - Optional unique ID to track this request (for concurrent request support)
    */
-  async sendMessage(messages, options, setEventState, requestId) {
+  async sendMessage(messages, options, setEventState, requestId, streamCallbacks) {
     if (!this.isConnected()) {
       throw new Error("Not connected to Obrew service");
     }
@@ -407,18 +409,48 @@ ${config}`
         const httpResponse = response;
         const contentType = httpResponse.headers.get("content-type");
         if (contentType?.includes("event-stream")) {
-          return await this.handleStreamResponse(
+          let lastEvent = "";
+          let accumulatedContent = "";
+          let accumulatedReasoning = "";
+          const streamed = await this.handleStreamResponse(
             httpResponse,
             {
               onData: (res) => {
-                console.log(`onData:
-${res}`);
+                try {
+                  const parsed = JSON.parse(res);
+                  const data = parsed?.data;
+                  if (!data) return;
+                  if (lastEvent === "GENERATING_REASONING") {
+                    const text = data.text ?? "";
+                    if (text) {
+                      accumulatedReasoning += text;
+                      streamCallbacks?.onReasoningToken?.(text);
+                    }
+                  } else if (lastEvent === "GENERATING_TOKENS") {
+                    const text = data.text ?? "";
+                    if (text) {
+                      accumulatedContent += text;
+                      streamCallbacks?.onToken?.(text);
+                    }
+                  } else if (lastEvent === "GENERATING_CONTENT") {
+                    const text = data.text ?? "";
+                    const reasoningText2 = data.reasoningText;
+                    accumulatedContent = text || accumulatedContent;
+                    if (reasoningText2) accumulatedReasoning = reasoningText2;
+                    streamCallbacks?.onFinalContent?.({
+                      text: accumulatedContent,
+                      reasoningText: accumulatedReasoning || void 0
+                    });
+                  }
+                } catch {
+                }
               },
               onFinish: async () => {
                 console.log(`${LOG_PREFIX} stream finished!`);
                 return;
               },
               onEvent: async (str) => {
+                lastEvent = str;
                 this.onStreamEvent(str);
                 const displayEventStr = str.replace(/_/g, " ") + "...";
                 if (str) setEventState?.(displayEventStr);
@@ -433,10 +465,25 @@ ${str}`);
             },
             abortController
           );
+          return accumulatedContent || streamed;
         } else {
           const data = await httpResponse.json();
+          const reasoningText2 = data && typeof data === "object" && data.reasoningText || void 0;
+          this.lastReasoning = reasoningText2 ?? null;
+          if (reasoningText2) {
+            const text = this.extractTextFromResponse(data);
+            streamCallbacks?.onFinalContent?.({ text, reasoningText: reasoningText2 });
+            return text;
+          }
           return this.extractTextFromResponse(data);
         }
+      }
+      const reasoningText = response && typeof response === "object" && response.reasoningText || void 0;
+      this.lastReasoning = reasoningText ?? null;
+      if (reasoningText) {
+        const text = this.extractTextFromResponse(response);
+        streamCallbacks?.onFinalContent?.({ text, reasoningText });
+        return text;
       }
       return this.extractTextFromResponse(response);
     } catch (error) {
