@@ -701,6 +701,8 @@ class ObrewClient {
         body: {
           modelPath,
           modelId,
+          messageFormat: modelSettings.model.messageFormat,
+          modelName: modelSettings.model.botName,
           init: {
             ...modelSettings.performance,
           },
@@ -1156,11 +1158,13 @@ class ObrewClient {
     modelSettings,
     modelPath,
     mmprojPath,
+    modelName,
   }: {
     modelId: string
     modelSettings: { init: I_LLM_Init_Options; call: I_LLM_Call_Options }
     modelPath?: string
     mmprojPath?: string
+    modelName?: string
   }): Promise<void> {
     if (!this.isConnected()) {
       throw new Error('Not connected to Obrew service')
@@ -1172,6 +1176,7 @@ class ObrewClient {
           modelPath,
           mmprojPath,
           modelId,
+          modelName,
           init: modelSettings.init,
           call: modelSettings.call,
         },
