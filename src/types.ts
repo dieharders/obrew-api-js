@@ -131,6 +131,7 @@ export interface I_Response_State {
   // Only meaningful for models the backend has tagged "reasoning".
   enable_thinking?: boolean
   reasoning_budget?: number
+  preserve_thinking?: boolean
 }
 
 export interface I_LLM_Call_Options extends I_Response_State {
@@ -203,6 +204,7 @@ export interface I_InferenceGenerateOptions extends T_LLM_InferenceOptions {
   enable_thinking?: boolean
   // -1 unlimited, 0 disabled, N token cap
   reasoning_budget?: number
+  preserve_thinking?: boolean
 }
 export type T_LLM_InferenceOptions = I_LLM_Call_Options & I_LLM_Init_Options
 

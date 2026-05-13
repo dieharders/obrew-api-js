@@ -103,6 +103,7 @@ interface I_Response_State {
     seed?: number;
     enable_thinking?: boolean;
     reasoning_budget?: number;
+    preserve_thinking?: boolean;
 }
 interface I_LLM_Call_Options extends I_Response_State {
     prompt?: string;
@@ -152,6 +153,7 @@ interface I_InferenceGenerateOptions extends T_LLM_InferenceOptions {
     context_items?: Array<Record<string, unknown>>;
     enable_thinking?: boolean;
     reasoning_budget?: number;
+    preserve_thinking?: boolean;
 }
 type T_LLM_InferenceOptions = I_LLM_Call_Options & I_LLM_Init_Options;
 interface I_LoadTextModelRequestPayload {
