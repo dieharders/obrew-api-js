@@ -215,6 +215,8 @@ export interface I_LoadTextModelRequestPayload {
   raw_input?: boolean
   modelPath?: string
   modelId: string
+  messageFormat?: string
+  modelName?: string
   init: I_LLM_Init_Options
   call: I_LLM_Call_Options
 }
@@ -458,6 +460,7 @@ export interface I_Model_State {
   id: string | undefined
   botName?: string
   filename: string | undefined
+  messageFormat?: string // Prompt format key (e.g. "qwen"). Sent to backend so it can resolve the prompt template without consulting its registry.
 }
 
 export interface I_System_State {
@@ -663,6 +666,7 @@ export interface I_LoadVisionModelRequest {
   modelPath?: string
   mmprojPath?: string
   modelId: string
+  modelName?: string
   init: I_LLM_Init_Options
   call: I_LLM_Call_Options
 }
