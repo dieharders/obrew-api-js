@@ -387,8 +387,7 @@ class ObrewClient {
       onReasoningToken?: (text: string) => void
       // Fired once with the final aggregated content + reasoning (if any).
       // Only populated when the backend separates delta.reasoning_content
-      // (requires --reasoning-format deepseek on llama-server, set automatically
-      // for models tagged with "reasoning").
+      // (requires --reasoning-format deepseek on llama-server).
       onFinalContent?: (payload: {
         text: string
         reasoningText?: string

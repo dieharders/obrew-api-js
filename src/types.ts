@@ -128,7 +128,6 @@ export interface I_Response_State {
   grammar?: string
   seed?: number
   // Reasoning/thinking-mode controls (Qwen3, QwQ, DeepSeek-R1, ...)
-  // Only meaningful for models the backend has tagged "reasoning".
   enable_thinking?: boolean
   reasoning_budget?: number
   preserve_thinking?: boolean
