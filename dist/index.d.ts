@@ -164,6 +164,8 @@ interface I_LoadTextModelRequestPayload {
     raw_input?: boolean;
     modelPath?: string;
     modelId: string;
+    messageFormat?: string;
+    modelName?: string;
     init: I_LLM_Init_Options;
     call: I_LLM_Call_Options;
 }
@@ -352,6 +354,7 @@ interface I_Model_State {
     id: string | undefined;
     botName?: string;
     filename: string | undefined;
+    messageFormat?: string;
 }
 interface I_System_State {
     systemMessage: string | undefined;
@@ -491,6 +494,7 @@ interface I_LoadVisionModelRequest {
     modelPath?: string;
     mmprojPath?: string;
     modelId: string;
+    modelName?: string;
     init: I_LLM_Init_Options;
     call: I_LLM_Call_Options;
 }
@@ -785,7 +789,7 @@ declare class ObrewClient {
         max_tokens?: number;
         temperature?: number;
     }): Promise<string>;
-    loadVisionModel({ modelId, modelSettings, modelPath, mmprojPath, }: {
+    loadVisionModel({ modelId, modelSettings, modelPath, mmprojPath, modelName, }: {
         modelId: string;
         modelSettings: {
             init: I_LLM_Init_Options;
@@ -793,6 +797,7 @@ declare class ObrewClient {
         };
         modelPath?: string;
         mmprojPath?: string;
+        modelName?: string;
     }): Promise<void>;
     unloadVisionModel(): Promise<void>;
     getLoadedVisionModel(): Promise<I_LoadedVisionModelRes | null>;

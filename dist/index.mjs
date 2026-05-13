@@ -591,6 +591,8 @@ ${str}`);
         body: {
           modelPath,
           modelId,
+          messageFormat: modelSettings.model.messageFormat,
+          modelName: modelSettings.model.botName,
           init: {
             ...modelSettings.performance
           },
@@ -962,7 +964,8 @@ ${error}`
     modelId,
     modelSettings,
     modelPath,
-    mmprojPath
+    mmprojPath,
+    modelName
   }) {
     if (!this.isConnected()) {
       throw new Error("Not connected to Obrew service");
@@ -973,6 +976,7 @@ ${error}`
           modelPath,
           mmprojPath,
           modelId,
+          modelName,
           init: modelSettings.init,
           call: modelSettings.call
         }
